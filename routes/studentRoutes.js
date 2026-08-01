@@ -839,7 +839,9 @@ router.delete("/admin/imports/:id", authenticate, async (req, res) => {
       await connection.query("DELETE FROM student_fees WHERE student_id IN (?)", [studentIds]);
       // 3. Delete associated qualifications
       await connection.query("DELETE FROM qualifications WHERE student_id IN (?)", [studentIds]);
-      // 4. Delete students themselves
+      // 4. Delete associated attendance
+      await connection.query("DELETE FROM attendance WHERE student_id IN (?)", [studentIds]);
+      // 5. Delete students themselves
       await connection.query("DELETE FROM students WHERE excel_import_id = ?", [id]);
     }
 
