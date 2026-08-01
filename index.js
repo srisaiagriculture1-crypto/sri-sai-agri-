@@ -65,7 +65,7 @@ try {
 
   app.use(express.static(activeBuildPath));
   
-  // SPA fallback middleware
+  // SPA fallback middleware (stream index.html directly)
   app.use((req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
@@ -75,14 +75,15 @@ try {
       console.error("❌ index.html missing at:", indexPath);
       return res.status(404).send("Application build not found. Please rebuild the frontend.");
     }
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error("Error serving SPA index.html:", err);
-        if (!res.headersSent) {
-          res.status(500).send("Error serving application: " + err.message);
-        }
+    res.setHeader("Content-Type", "text/html; charset=UTF-8");
+    const stream = fs.createReadStream(indexPath);
+    stream.on("error", (err) => {
+      console.error("Error reading index.html:", err);
+      if (!res.headersSent) {
+        res.status(500).send("Error reading application: " + err.message);
       }
     });
+    stream.pipe(res);
   });
 
   // Auto-initialize Admin Account
