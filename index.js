@@ -101,8 +101,6 @@ try {
         await pool.query("INSERT INTO admins (username, password) VALUES (?, ?)", [username, hashedPassword]);
         console.log("✨ Admin account created!");
       } else {
-        // Optional: Update password if needed
-        await pool.query("UPDATE admins SET password = ? WHERE username = ?", [hashedPassword, username]);
         console.log("✨ Admin account verified.");
       }
 
