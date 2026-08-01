@@ -47,12 +47,23 @@ try {
   console.log("✅ Routes initialized");
 
   // Serve static files
-  const buildPath = path.join(__dirname, "sri-sai-agriculture/build");
+  const buildPath = path.resolve(__dirname, "sri-sai-agriculture", "build");
   app.use(express.static(buildPath));
   
-  // Use a general middleware for the SPA fallback to avoid path-to-regexp issues
-  app.use((req, res) => {
-    res.sendFile(path.join(buildPath, "index.html"));
+  // Use a general middleware for the SPA fallback
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      return next();
+    }
+    const indexPath = path.resolve(buildPath, "index.html");
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error("Error serving SPA index.html for path:", req.path, err);
+        if (!res.headersSent) {
+          res.status(500).send("Error loading application");
+        }
+      }
+    });
   });
 
   // Auto-initialize Admin Account
