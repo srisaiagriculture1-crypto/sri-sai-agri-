@@ -16,6 +16,7 @@ try {
   const express = require("express");
   const cors = require("cors");
   const path = require("path");
+  const fs = require("fs");
   const cookieParser = require("cookie-parser");
   console.log("✅ Modules loaded");
 
@@ -46,21 +47,39 @@ try {
   app.use("/api/receptionist", require("./routes/receptionistRoutes"));
   console.log("✅ Routes initialized");
 
-  // Serve static files
-  const buildPath = path.resolve(__dirname, "sri-sai-agriculture", "build");
-  app.use(express.static(buildPath));
+  // Serve static files with dynamic path resolution
+  const possibleBuildPaths = [
+    path.resolve(__dirname, "sri-sai-agriculture", "build"),
+    path.resolve(__dirname, "build"),
+    path.resolve(process.cwd(), "sri-sai-agriculture", "build"),
+    path.resolve(process.cwd(), "build")
+  ];
+
+  let activeBuildPath = possibleBuildPaths.find(p => fs.existsSync(path.join(p, "index.html")));
+  if (!activeBuildPath) {
+    console.warn("⚠️ Could not locate index.html in candidate paths:", possibleBuildPaths);
+    activeBuildPath = possibleBuildPaths[0];
+  } else {
+    console.log("✅ Serving SPA static files from:", activeBuildPath);
+  }
+
+  app.use(express.static(activeBuildPath));
   
-  // Use a general middleware for the SPA fallback (Express 5 safe)
+  // SPA fallback middleware
   app.use((req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
     }
-    const indexPath = path.resolve(buildPath, "index.html");
+    const indexPath = path.join(activeBuildPath, "index.html");
+    if (!fs.existsSync(indexPath)) {
+      console.error("❌ index.html missing at:", indexPath);
+      return res.status(404).send("Application build not found. Please rebuild the frontend.");
+    }
     res.sendFile(indexPath, (err) => {
       if (err) {
-        console.error("Error serving SPA index.html for path:", req.path, err);
+        console.error("Error serving SPA index.html:", err);
         if (!res.headersSent) {
-          res.status(500).send("Error loading application");
+          res.status(500).send("Error serving application: " + err.message);
         }
       }
     });
