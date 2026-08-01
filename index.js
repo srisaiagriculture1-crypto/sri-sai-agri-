@@ -50,8 +50,8 @@ try {
   const buildPath = path.resolve(__dirname, "sri-sai-agriculture", "build");
   app.use(express.static(buildPath));
   
-  // Use a general middleware for the SPA fallback
-  app.get("*", (req, res, next) => {
+  // Use a general middleware for the SPA fallback (Express 5 safe)
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
     }
