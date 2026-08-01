@@ -853,6 +853,11 @@ router.delete("/admin/imports/:id", authenticate, async (req, res) => {
   } catch (err) {
     await connection.rollback();
     res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
+});
+
 // DELETE: Delete ALL student accounts and all associated data permanently
 router.delete("/admin/clear-all-students", authenticate, async (req, res) => {
   const connection = await pool.getConnection();
