@@ -209,11 +209,16 @@ router.post("/forgot-password", async (req, res) => {
 
     let admin = rows[0];
     
-    // Fallback: If no DB row matches but input equals process.env.ADMIN_USERNAME or ADMIN_EMAIL
-    const envUser = (process.env.ADMIN_USERNAME || "admin").trim();
-    if (!admin && (inputVal.toLowerCase() === envUser.toLowerCase() || inputVal.toLowerCase() === "admin")) {
-      const [allAdmins] = await pool.query("SELECT * FROM admins LIMIT 1");
-      admin = allAdmins[0];
+    // Fallback: If input doesn't match username/email directly, pick the super admin record
+    if (!admin) {
+      const envUser = (process.env.ADMIN_USERNAME || "admin").trim();
+      const isEnvUser = inputVal.toLowerCase() === envUser.toLowerCase() || inputVal.toLowerCase() === "admin";
+      const isEmailInput = inputVal.includes("@");
+      
+      if (isEnvUser || isEmailInput) {
+        const [allAdmins] = await pool.query("SELECT * FROM admins ORDER BY id ASC LIMIT 1");
+        admin = allAdmins[0];
+      }
     }
 
     if (!admin) {
