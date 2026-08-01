@@ -1744,6 +1744,35 @@ export default function AdminDashboard() {
                         {downloadingPdf ? 'Generating...' : 'Attendance PDF'}
                       </button>
 
+                      {/* Clear All Students */}
+                      <button
+                        onClick={async () => {
+                          const confirmVal = window.prompt(
+                            `⚠️ DANGER: This will PERMANENTLY delete ALL ${students.length} student account(s), fee structures, attendance, qualifications, and payment logs.\n\nTo confirm, type "DELETE ALL" in the box below:`
+                          );
+                          if (confirmVal === "DELETE ALL") {
+                            try {
+                              setLoading(true);
+                              await axios.delete('/api/students/admin/clear-all-students', { withCredentials: true });
+                              alert("All student accounts and details have been permanently deleted!");
+                              setStudents([]);
+                              setRefresh(r => r + 1);
+                            } catch (err) {
+                              alert("Failed to delete students: " + (err.response?.data?.message || err.message));
+                            } finally {
+                              setLoading(false);
+                            }
+                          } else if (confirmVal !== null) {
+                            alert("Incorrect confirmation text. Deletion canceled.");
+                          }
+                        }}
+                        disabled={loading || students.length === 0}
+                        className="flex items-center gap-2 px-5 py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest border border-red-100 transition-all active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Trash2 size={16} />
+                        Clear All Students
+                      </button>
+
                      <div className="relative flex-1 md:w-80 group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue transition-colors" size={18} />
                         <input 
