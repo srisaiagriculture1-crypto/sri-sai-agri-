@@ -1593,11 +1593,13 @@ export default function AdminDashboard() {
                 </div>
              </div>
           ) : activeTab === 'students' ? (
-               <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
-                  <div>
-                    <h3 className="text-xl font-black text-ink uppercase tracking-tight">Student Accounts</h3>
-                    <p className="text-[10px] text-muted font-bold tracking-widest mt-1">TOTAL ENROLLED: {students.length}</p>
-                  <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+             <div className="p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+                   <div>
+                     <h3 className="text-xl font-black text-ink uppercase tracking-tight">Student Accounts</h3>
+                     <p className="text-[10px] text-muted font-bold tracking-widest mt-1">TOTAL ENROLLED: {students.length}</p>
+                   </div>
+                   <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                      {/* Send Fee Reminder to All Students */}
                      <button
                        onClick={async () => {
