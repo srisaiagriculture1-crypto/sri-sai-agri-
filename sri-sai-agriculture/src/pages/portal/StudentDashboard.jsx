@@ -79,7 +79,7 @@ export default function StudentDashboard() {
   }, [navigate]);
 
    const openPayModal = (type, amount, year) => {
-      setPayData({ type, amount, year });
+      setPayData({ type, amount, maxAmount: amount, year });
       setShowPayModal(true);
       // Re-fetch to get latest balances from Admin Panel
       axios.get(`${API_URL}/students/profile`, { withCredentials: true })
@@ -665,7 +665,7 @@ export default function StudentDashboard() {
                               amount = balance;
                            }
                            
-                           setPayData({ ...payData, year, amount });
+                           setPayData({ ...payData, year, amount, maxAmount: amount });
                        }}
                        className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl font-bold text-ink focus:outline-none focus:ring-2 focus:ring-blue/20 transition-all"
                     >
@@ -677,11 +677,63 @@ export default function StudentDashboard() {
                     </select>
                  </div>
 
-                 {/* Amount Alert */}
-                 <div className="bg-blue/5 border border-blue/10 p-5 rounded-2xl text-center">
-                    <p className="text-xs font-bold text-blue uppercase tracking-widest mb-1">Total Due Amount</p>
-                    <h2 className="text-3xl font-black text-blue">₹{payData.amount}</h2>
-                    {payData.amount === 0 && payData.year && <p className="text-[10px] font-bold text-green-500 uppercase mt-2">No Dues for this year! ✨</p>}
+                 {/* Amount Alert & Partial Payment Input */}
+                 <div className="bg-blue/5 border border-blue/10 p-6 rounded-3xl space-y-4">
+                    <div className="flex items-center justify-between">
+                       <div>
+                          <p className="text-[10px] font-black text-blue uppercase tracking-widest">Total Remaining Due</p>
+                          <h3 className="text-xl font-black text-ink mt-0.5">₹{Number(payData.maxAmount || payData.amount || 0).toLocaleString()}</h3>
+                       </div>
+                       <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-xl border border-amber-200">
+                          Partial Payment Enabled
+                       </span>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Enter Amount You Are Paying Now (₹)</label>
+                       <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-blue text-lg">₹</span>
+                          <input 
+                             type="number" 
+                             className="w-full pl-9 pr-4 py-4 bg-white border border-gray-200 rounded-2xl font-black text-blue text-xl focus:border-blue outline-none transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                             value={payData.amount === 0 || payData.amount === '0' ? '' : payData.amount}
+                             placeholder={`Enter amount up to ₹${payData.maxAmount || payData.amount || 0}`}
+                             onFocus={(e) => e.target.select()}
+                             onChange={(e) => {
+                                setPayData({ ...payData, amount: e.target.value });
+                             }}
+                          />
+                       </div>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                       <button
+                          type="button"
+                          onClick={() => setPayData({ ...payData, amount: payData.maxAmount })}
+                          className="px-3 py-1.5 bg-blue text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-ink transition-all"
+                       >
+                          Pay Full Due (₹{Number(payData.maxAmount || 0).toLocaleString()})
+                       </button>
+                       {Number(payData.maxAmount) > 0 && (
+                          <button
+                             type="button"
+                             onClick={() => setPayData({ ...payData, amount: Math.round(Number(payData.maxAmount) / 2) })}
+                             className="px-3 py-1.5 bg-white text-blue border border-blue/20 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-blue/5 transition-all"
+                          >
+                             Pay Half (₹{Math.round(Number(payData.maxAmount) / 2).toLocaleString()})
+                          </button>
+                       )}
+                    </div>
+
+                    {Number(payData.amount) > 0 && Number(payData.amount) < Number(payData.maxAmount) && (
+                       <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-amber-700">Remaining Balance after this payment:</span>
+                          <span className="font-black text-amber-800">₹{Math.max(0, Number(payData.maxAmount) - Number(payData.amount)).toLocaleString()}</span>
+                       </div>
+                    )}
+
+                    {payData.maxAmount === 0 && payData.year && <p className="text-[10px] font-bold text-green-500 uppercase text-center mt-2">No Dues for this year! ✨</p>}
                  </div>
 
                  {/* QR Code Section */}
