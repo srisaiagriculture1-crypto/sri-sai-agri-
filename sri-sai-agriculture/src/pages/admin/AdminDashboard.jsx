@@ -1151,8 +1151,10 @@ export default function AdminDashboard() {
                                       <td key={key} className="p-2">
                                         <input 
                                           type="number" 
-                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                          value={fee[key] || 0}
+                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          value={fee[key] === 0 || fee[key] === '0' || !fee[key] ? '' : fee[key]}
+                                          placeholder="0"
+                                          onFocus={(e) => e.target.select()}
                                           onChange={(e) => updateFee({ [key]: e.target.value })}
                                         />
                                       </td>
@@ -1420,8 +1422,10 @@ export default function AdminDashboard() {
                                              <td key={key} className="p-2">
                                                 <input 
                                                    type="number" 
-                                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                                   value={fee[key] || 0}
+                                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                   value={fee[key] === 0 || fee[key] === '0' || !fee[key] ? '' : fee[key]}
+                                                   placeholder="0"
+                                                   onFocus={(e) => e.target.select()}
                                                    onChange={(e) => updateFee({ [key]: e.target.value })}
                                                 />
                                              </td>
@@ -1521,8 +1525,10 @@ export default function AdminDashboard() {
                                             <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
                                             <input
                                               type="number"
-                                              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs"
-                                              value={fee[cat.keyTotal] || 0}
+                                              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                              value={fee[cat.keyTotal] === 0 || fee[cat.keyTotal] === '0' || !fee[cat.keyTotal] ? '' : fee[cat.keyTotal]}
+                                              placeholder="0"
+                                              onFocus={(e) => e.target.select()}
                                               onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
                                             />
                                           </div>
@@ -1530,8 +1536,10 @@ export default function AdminDashboard() {
                                             <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
                                             <input
                                               type="number"
-                                              className="w-full px-3 py-1.5 bg-white border border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-green-700 text-xs"
-                                              value={fee[cat.keyPaid] || 0}
+                                              className="w-full px-3 py-1.5 bg-white border border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-green-700 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                              value={fee[cat.keyPaid] === 0 || fee[cat.keyPaid] === '0' || !fee[cat.keyPaid] ? '' : fee[cat.keyPaid]}
+                                              placeholder="0"
+                                              onFocus={(e) => e.target.select()}
                                               onChange={(e) => updateFee({ [cat.keyPaid]: e.target.value })}
                                             />
                                           </div>
