@@ -1164,7 +1164,8 @@ export default function AdminDashboard() {
                           </table>
                         </div>
                       </div>
-                   )}
+                    </div>
+                  )}
 
                   {activeTab !== 'courses' && activeTab !== 'students' && (
                       <div className="relative p-10 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/50 text-center hover:border-blue/50 hover:bg-blue/5 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
