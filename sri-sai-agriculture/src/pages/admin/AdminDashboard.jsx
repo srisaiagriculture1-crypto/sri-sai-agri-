@@ -1163,16 +1163,175 @@ export default function AdminDashboard() {
                                     ))}
                                   </tr>
                                 );
-                              })}
-                            </tbody>
-                          </table>
+                                })}
+                              </tbody>
+                           </table>
                         </div>
-                      </div>
+                     </div>
+
+                     {/* Itemized Partial Paid & Due Entry */}
+                     <div className="mt-12 p-8 bg-blue/5 rounded-3xl border border-blue/10">
+                        <div className="flex items-center gap-4 mb-8">
+                          <div className="w-12 h-12 bg-blue/10 rounded-2xl flex items-center justify-center text-blue">
+                             <RefreshCw size={24} />
+                          </div>
+                          <div>
+                             <h3 className="text-xl font-black text-ink">PARTIAL PAYMENTS & DUE MANAGEMENT</h3>
+                             <p className="text-[10px] text-muted uppercase font-black tracking-widest">Update paid amounts and view remaining due amounts per fee type</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-8">
+                          {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                            const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
+                              academic_year: year, 
+                              total_fee: 0, paid_amount: 0, 
+                              hostel_fee: 0, hostel_fee_paid: 0,
+                              exam_fee: 0, exam_fee_paid: 0,
+                              practical_fee: 0, practical_fee_paid: 0,
+                              travelling_fee: 0, travelling_fee_paid: 0, 
+                              committed_fee: 0, admission_fee: 0, payment_status: 'Pending'
+                            };
+
+                            const updateFee = (updates) => {
+                              const newFees = [...studentFees];
+                              const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
+                              if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
+                              else newFees.push({ ...fee, ...updates });
+                              setStudentFees(newFees);
+                            };
+
+                            const categories = [
+                              { keyTotal: 'total_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
+                              { keyTotal: 'hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
+                              { keyTotal: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
+                              { keyTotal: 'practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
+                              { keyTotal: 'travelling_fee', keyPaid: 'travelling_fee_paid', label: 'Travelling Expenses', color: 'emerald' },
+                            ];
+
+                            const totalAllocated = categories.reduce((sum, c) => sum + Number(fee[c.keyTotal] || 0), 0);
+                            const totalPaid = categories.reduce((sum, c) => sum + Number(fee[c.keyPaid] || 0), 0);
+                            const totalDue = Math.max(0, totalAllocated - totalPaid);
+
+                            return (
+                              <div key={year} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-black text-ink text-sm uppercase tracking-widest bg-ink/5 px-4 py-2 rounded-xl">{year}</span>
+                                    <span className="text-xs font-bold text-gray-500">Total Fee: <strong className="text-ink">₹{totalAllocated.toLocaleString()}</strong></span>
+                                    <span className="text-xs font-bold text-green-600">Paid: <strong>₹{totalPaid.toLocaleString()}</strong></span>
+                                  </div>
+                                  <div>
+                                    {totalAllocated > 0 && totalDue === 0 ? (
+                                      <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-black rounded-xl border border-green-200">✓ Fully Paid</span>
+                                    ) : totalDue > 0 ? (
+                                      <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-200">Overall Due: ₹{totalDue.toLocaleString()}</span>
+                                    ) : (
+                                      <span className="px-3 py-1.5 bg-gray-50 text-gray-400 text-xs font-black rounded-xl">No Fees Allocated</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Category Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                  {categories.map(cat => {
+                                    const total = Number(fee[cat.keyTotal] || 0);
+                                    const paid = Number(fee[cat.keyPaid] || 0);
+                                    const due = Math.max(0, total - paid);
+
+                                    return (
+                                      <div key={cat.label} className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between gap-3">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">{cat.label}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateFee({ [cat.keyPaid]: paid >= total && total > 0 ? 0 : total })}
+                                            className={`text-[9px] font-bold px-2 py-0.5 rounded-md transition-colors ${paid >= total && total > 0 ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600 hover:bg-green-100'}`}
+                                          >
+                                            {paid >= total && total > 0 ? '✓ Paid' : 'Set Full'}
+                                          </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          <div>
+                                            <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
+                                            <input
+                                              type="number"
+                                              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs"
+                                              value={fee[cat.keyTotal] || 0}
+                                              onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
+                                            <input
+                                              type="number"
+                                              className="w-full px-3 py-1.5 bg-white border border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-green-700 text-xs"
+                                              value={fee[cat.keyPaid] || 0}
+                                              onChange={(e) => updateFee({ [cat.keyPaid]: e.target.value })}
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between text-[10px]">
+                                          <span className="font-bold text-gray-400">Due:</span>
+                                          <span className={`font-black ${due > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                            ₹{due.toLocaleString()}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                     </div>
+
+                     <div className="mt-12 flex flex-col md:flex-row gap-4">
+                        <button 
+                           onClick={async () => {
+                              try {
+                                 setLoading(true);
+                                 const studentPayload = new FormData();
+                                 Object.keys(formData).forEach(key => {
+                                    if (!['_id', 'id', 'photo', 'created_at'].includes(key)) {
+                                       if (key === 'password' && !formData[key]) return;
+                                       studentPayload.append(key, formData[key]);
+                                    }
+                                 });
+                                 if (file) studentPayload.append('photo', file);
+
+                                 await axios.put(`/api/students/admin/update/${selectedStudent.id}`, studentPayload, {
+                                    headers: { 'Content-Type': 'multipart/form-data' },
+                                    withCredentials: true
+                                 });
+                                 await axios.put(`/api/student-fees/admin/update/${selectedStudent.id}`, { fees: studentFees }, {
+                                    withCredentials: true
+                                 });
+                                 alert("Student Account & Fee Breakdown Updated Successfully!");
+                                 setFile(null);
+                                 setViewMode('list');
+                                 setRefresh(r => r + 1);
+                              } catch (err) {
+                                 alert("Update failed: " + (err.response?.data?.message || err.message));
+                              } finally {
+                                 setLoading(false);
+                              }
+                           }}
+                           disabled={loading}
+                           className="w-full bg-[#15803d] text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-green-500/20 hover:bg-[#166534] transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                           {loading ? 'Processing...' : 'SYNC & CREATE ENTRY'}
+                        </button>
+                     </div>
+                </div>
+             </div>
+          ) : activeTab === 'students' ? (   </div>
                     </div>
                   )}
 
                   {activeTab !== 'courses' && activeTab !== 'students' && (
-                    <div className="md:col-span-2">
                       <div className="relative p-10 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/50 text-center hover:border-blue/50 hover:bg-blue/5 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
                         {file || formData.existing_image ? (
                           <div className="w-full max-h-48 overflow-hidden rounded-xl mb-4 shadow-sm border border-gray-100 flex justify-center bg-black/5">
@@ -1382,189 +1541,59 @@ export default function AdminDashboard() {
                        </button>
                     </div>
 
-                    {/* Simple Fee Entry - Old Format */}
-                    <div className="mt-16 p-10 bg-blue/5 rounded-[3rem] border border-blue/10">
-                       <div className="flex items-center gap-4 mb-8">
-                         <div className="w-12 h-12 bg-blue/10 rounded-2xl flex items-center justify-center text-blue">
-                            <RefreshCw size={24} />
-                         </div>
-                         <div>
-                            <h3 className="text-xl font-black text-ink">YEAR-WISE FEE ENTRY</h3>
-                            <p className="text-[10px] text-muted uppercase font-black tracking-widest">Quick entry for college fee, hostel fee &amp; paid status per year</p>
-                         </div>
-                       </div>
-                       <div className="grid grid-cols-1 gap-8">
-                         {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
-                           const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                             academic_year: year, 
-                             total_fee: 0, paid_amount: 0, 
-                             hostel_fee: 0, hostel_fee_paid: 0,
-                             exam_fee: 0, exam_fee_paid: 0,
-                             practical_fee: 0, practical_fee_paid: 0,
-                             travelling_fee: 0, travelling_fee_paid: 0, 
-                             committed_fee: 0, admission_fee: 0, payment_status: 'Pending'
-                           };
+                     {/* Fee Breakdown Table - Specify Yearly Fee Structure */}
+                     <div className="mt-12 p-8 bg-gray-50/50 rounded-3xl border border-gray-100">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                              <RefreshCw size={20} />
+                           </div>
+                           <div>
+                              <h4 className="font-bold text-ink uppercase tracking-tight">FEE BREAKDOWN</h4>
+                              <p className="text-[10px] text-muted uppercase font-black tracking-widest">SPECIFY YEARLY FEE STRUCTURE</p>
+                           </div>
+                        </div>
 
-                           const updateFee = (updates) => {
-                             const newFees = [...studentFees];
-                             const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
-                             if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
-                             else newFees.push({ ...fee, ...updates });
-                             setStudentFees(newFees);
-                           };
-
-                           const categories = [
-                             { keyTotal: 'total_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
-                             { keyTotal: 'hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
-                             { keyTotal: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
-                             { keyTotal: 'practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
-                             { keyTotal: 'travelling_fee', keyPaid: 'travelling_fee_paid', label: 'Travelling Expenses', color: 'emerald' },
-                           ];
-
-                           const totalAllocated = categories.reduce((sum, c) => sum + Number(fee[c.keyTotal] || 0), 0);
-                           const totalPaid = categories.reduce((sum, c) => sum + Number(fee[c.keyPaid] || 0), 0);
-                           const totalDue = Math.max(0, totalAllocated - totalPaid);
-
-                           return (
-                             <div key={year} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
-                                 <div className="flex items-center gap-3">
-                                   <span className="font-black text-ink text-sm uppercase tracking-widest bg-ink/5 px-4 py-2 rounded-xl">{year}</span>
-                                   <span className="text-xs font-bold text-gray-500">Total Fee: <strong className="text-ink">₹{totalAllocated.toLocaleString()}</strong></span>
-                                   <span className="text-xs font-bold text-green-600">Paid: <strong>₹{totalPaid.toLocaleString()}</strong></span>
-                                 </div>
-                                 <div>
-                                   {totalAllocated > 0 && totalDue === 0 ? (
-                                     <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-black rounded-xl border border-green-200">✓ Fully Paid</span>
-                                   ) : totalDue > 0 ? (
-                                     <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-200">Overall Due: ₹{totalDue.toLocaleString()}</span>
-                                   ) : (
-                                     <span className="px-3 py-1.5 bg-gray-50 text-gray-400 text-xs font-black rounded-xl">No Fees Allocated</span>
-                                   )}
-                                 </div>
-                               </div>
-
-                               {/* Category Grid */}
-                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                                 {categories.map(cat => {
-                                   const total = Number(fee[cat.keyTotal] || 0);
-                                   const paid = Number(fee[cat.keyPaid] || 0);
-                                   const due = Math.max(0, total - paid);
-
-                                   return (
-                                     <div key={cat.label} className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between gap-3">
-                                       <div className="flex items-center justify-between">
-                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">{cat.label}</span>
-                                         <button
-                                           type="button"
-                                           onClick={() => updateFee({ [cat.keyPaid]: paid >= total && total > 0 ? 0 : total })}
-                                           className={`text-[9px] font-bold px-2 py-0.5 rounded-md transition-colors ${paid >= total && total > 0 ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600 hover:bg-green-100'}`}
-                                         >
-                                           {paid >= total && total > 0 ? '✓ Paid' : 'Set Full'}
-                                         </button>
-                                       </div>
-
-                                       <div className="space-y-2">
-                                         <div>
-                                           <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
-                                           <input
-                                             type="number"
-                                             className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs"
-                                             value={fee[cat.keyTotal] || 0}
-                                             onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
-                                           />
-                                         </div>
-                                         <div>
-                                           <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
-                                           <input
-                                             type="number"
-                                             className="w-full px-3 py-1.5 bg-white border border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-green-700 text-xs"
-                                             value={fee[cat.keyPaid] || 0}
-                                             onChange={(e) => updateFee({ [cat.keyPaid]: e.target.value })}
-                                           />
-                                         </div>
-                                       </div>
-
-                                       <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between text-[10px]">
-                                         <span className="font-bold text-gray-400">Due:</span>
-                                         <span className={`font-black ${due > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                                           ₹{due.toLocaleString()}
-                                         </span>
-                                       </div>
-                                     </div>
-                                   );
+                        <div className="overflow-x-auto border border-gray-100 rounded-2xl shadow-sm">
+                           <table className="w-full border-collapse bg-white">
+                              <thead className="bg-[#15803d] text-white">
+                                 <tr>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Academic Year</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Total Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Committed Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Admission Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Practical Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-50">
+                                 {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                                    const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
+                                       academic_year: year, total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0, paid_amount: 0
+                                    };
+                                    const updateFee = (updates) => {
+                                       const newFees = [...studentFees];
+                                       const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
+                                       if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
+                                       else newFees.push({ ...fee, ...updates });
+                                       setStudentFees(newFees);
+                                    };
+                                    return (
+                                       <tr key={year} className="hover:bg-gray-50/50">
+                                          <td className="p-4 font-black text-ink text-xs uppercase tracking-wider">{year}</td>
+                                          {['total_fee', 'committed_fee', 'admission_fee', 'practical_fee', 'hostel_fee', 'travelling_fee'].map(key => (
+                                             <td key={key} className="p-2">
+                                                <input 
+                                                   type="number" 
+                                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
+                                                   value={fee[key] || 0}
+                                                   onChange={(e) => updateFee({ [key]: e.target.value })}
+                                                />
+                                             </td>
+                                          ))}
+                                       </tr>
+                                    );
                                  })}
-                               </div>
-                             </div>
-                           );
-                         })}
-                       </div>
-                    </div>
-
-                   <div className="mt-12 flex flex-col md:flex-row gap-4">
-                      <button 
-                         onClick={async () => {
-                            try {
-                               setLoading(true);
-                                const studentPayload = new FormData();
-                                Object.keys(formData).forEach(key => {
-                                  if (!['_id', 'id', 'photo', 'created_at'].includes(key)) {
-                                    if (key === 'password' && !formData[key]) return;
-                                    studentPayload.append(key, formData[key]);
-                                  }
-                                });
-                                if (file) studentPayload.append('photo', file);
-
-                                await axios.put(`/api/students/admin/update/${selectedStudent.id}`, studentPayload, {
-                                  headers: { 'Content-Type': 'multipart/form-data' },
-                                  withCredentials: true
-                                });
-                                await axios.put(`/api/student-fees/admin/update/${selectedStudent.id}`, { fees: studentFees }, {
-                                  withCredentials: true
-                                });
-                                alert("Student Account Updated Successfully!");
-                                setFile(null);
-                                setViewMode('list');
-                                setRefresh(r => r + 1);
-                            } catch (err) {
-                               alert("Update failed: " + (err.response?.data?.message || err.message));
-                            } finally {
-                               setLoading(false);
-                            }
-                         }}
-                         disabled={loading}
-                         className="flex-grow bg-[#15803d] text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-green-500/20 hover:bg-[#166534] transition-all active:scale-[0.98] disabled:opacity-50"
-                      >
-                         {loading ? 'Processing...' : 'Sync & Update Student Account'}
-                      </button>
-
-                      {/* Send Fee Reminder Email to ALL Students */}
-                      <button
-                        onClick={async () => {
-                          if (!window.confirm('This will send a fee payment reminder email to ALL enrolled students. Continue?')) return;
-                          try {
-                            setSendingReminder(true);
-                            const res = await axios.post('/api/students/send-fee-reminder', {}, { withCredentials: true });
-                            alert(`✅ Fee reminders sent!\n\n📧 Delivered: ${res.data.sent} students\n❌ Failed: ${res.data.failed} students\n👥 Total: ${res.data.total} students`);
-                          } catch (err) {
-                            alert('Failed to send reminders: ' + (err.response?.data?.message || err.message));
-                          } finally {
-                            setSendingReminder(false);
-                          }
-                        }}
-                        disabled={sendingReminder}
-                        className="flex items-center justify-center gap-2 px-8 py-5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.15em] shadow-xl shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                        {sendingReminder ? 'Sending Emails...' : 'Send Fee Reminder to All'}
-                      </button>
-                  </div>
-               </div>
-            </div>
-          ) : activeTab === 'students' ? (
-            <div className="p-8">
                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
                   <div>
                     <h3 className="text-xl font-black text-ink uppercase tracking-tight">Student Accounts</h3>
