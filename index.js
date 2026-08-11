@@ -208,6 +208,32 @@ try {
           UNIQUE KEY (student_id, date)
         )
       `);
+
+      // Migration for category-wise student_fees fields
+      const feeCols = [
+        "total_fee DECIMAL(10,2) DEFAULT 0",
+        "paid_amount DECIMAL(10,2) DEFAULT 0",
+        "hostel_fee DECIMAL(10,2) DEFAULT 0",
+        "hostel_fee_paid DECIMAL(10,2) DEFAULT 0",
+        "exam_fee DECIMAL(10,2) DEFAULT 0",
+        "exam_fee_paid DECIMAL(10,2) DEFAULT 0",
+        "practical_fee DECIMAL(10,2) DEFAULT 0",
+        "practical_fee_paid DECIMAL(10,2) DEFAULT 0",
+        "travelling_fee DECIMAL(10,2) DEFAULT 0",
+        "travelling_fee_paid DECIMAL(10,2) DEFAULT 0"
+      ];
+      for (const colDef of feeCols) {
+        try {
+          await pool.query(`ALTER TABLE student_fees ADD COLUMN IF NOT EXISTS ${colDef}`);
+        } catch (e) {
+          // Alternative syntax for MySQL versions without ADD COLUMN IF NOT EXISTS
+          try {
+            const colName = colDef.split(" ")[0];
+            await pool.query(`ALTER TABLE student_fees ADD COLUMN ${colDef}`);
+          } catch(err) { /* column may already exist */ }
+        }
+      }
+
       console.log("✅ Database tables verified.");
     } catch (err) {
       console.error("❌ Admin init failed:", err.message);

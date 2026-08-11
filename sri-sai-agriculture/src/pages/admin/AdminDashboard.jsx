@@ -1393,11 +1393,18 @@ export default function AdminDashboard() {
                             <p className="text-[10px] text-muted uppercase font-black tracking-widest">Quick entry for college fee, hostel fee &amp; paid status per year</p>
                          </div>
                        </div>
-                       <div className="grid grid-cols-1 gap-6">
+                       <div className="grid grid-cols-1 gap-8">
                          {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
                            const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                             academic_year: year, total_fee: 0, hostel_fee: 0, travelling_fee: 0, paid_amount: 0, payment_status: 'Pending'
+                             academic_year: year, 
+                             total_fee: 0, paid_amount: 0, 
+                             hostel_fee: 0, hostel_fee_paid: 0,
+                             exam_fee: 0, exam_fee_paid: 0,
+                             practical_fee: 0, practical_fee_paid: 0,
+                             travelling_fee: 0, travelling_fee_paid: 0, 
+                             committed_fee: 0, admission_fee: 0, payment_status: 'Pending'
                            };
+
                            const updateFee = (updates) => {
                              const newFees = [...studentFees];
                              const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
@@ -1405,173 +1412,94 @@ export default function AdminDashboard() {
                              else newFees.push({ ...fee, ...updates });
                              setStudentFees(newFees);
                            };
-                           const isPaid = Number(fee.paid_amount) >= (Number(fee.total_fee) + Number(fee.hostel_fee) + Number(fee.travelling_fee || 0));
+
+                           const categories = [
+                             { keyTotal: 'total_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
+                             { keyTotal: 'hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
+                             { keyTotal: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
+                             { keyTotal: 'practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
+                             { keyTotal: 'travelling_fee', keyPaid: 'travelling_fee_paid', label: 'Travelling Expenses', color: 'emerald' },
+                           ];
+
+                           const totalAllocated = categories.reduce((sum, c) => sum + Number(fee[c.keyTotal] || 0), 0);
+                           const totalPaid = categories.reduce((sum, c) => sum + Number(fee[c.keyPaid] || 0), 0);
+                           const totalDue = Math.max(0, totalAllocated - totalPaid);
+
                            return (
-                             <div key={year} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                               <div className="flex flex-wrap items-center gap-4">
-                                 <div className="w-24 shrink-0">
-                                   <span className="font-black text-ink text-xs uppercase tracking-widest bg-ink/5 px-3 py-2 rounded-xl block text-center">{year}</span>
+                             <div key={year} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
+                                 <div className="flex items-center gap-3">
+                                   <span className="font-black text-ink text-sm uppercase tracking-widest bg-ink/5 px-4 py-2 rounded-xl">{year}</span>
+                                   <span className="text-xs font-bold text-gray-500">Total Fee: <strong className="text-ink">₹{totalAllocated.toLocaleString()}</strong></span>
+                                   <span className="text-xs font-bold text-green-600">Paid: <strong>₹{totalPaid.toLocaleString()}</strong></span>
                                  </div>
-                                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">College Fee (₹)</label>
-                                   <input
-                                     type="number"
-                                     className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none font-bold text-ink text-sm"
-                                     value={fee.total_fee || 0}
-                                     onChange={(e) => updateFee({ total_fee: e.target.value })}
-                                   />
+                                 <div>
+                                   {totalAllocated > 0 && totalDue === 0 ? (
+                                     <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-black rounded-xl border border-green-200">✓ Fully Paid</span>
+                                   ) : totalDue > 0 ? (
+                                     <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-200">Overall Due: ₹{totalDue.toLocaleString()}</span>
+                                   ) : (
+                                     <span className="px-3 py-1.5 bg-gray-50 text-gray-400 text-xs font-black rounded-xl">No Fees Allocated</span>
+                                   )}
                                  </div>
-                                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                   <label className="text-[9px] font-black text-orange uppercase tracking-widest">Hostel Fee (₹)</label>
-                                   <input
-                                     type="number"
-                                     className="px-3 py-2 bg-orange/5 border border-orange/20 rounded-xl focus:border-orange outline-none font-bold text-ink text-sm"
-                                     value={fee.hostel_fee || 0}
-                                     onChange={(e) => updateFee({ hostel_fee: e.target.value })}
-                                   />
-                                 </div>
-                                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                   <label className="text-[9px] font-black text-blue uppercase tracking-widest">Travelling Expenses (₹)</label>
-                                   <input
-                                     type="number"
-                                     className="px-3 py-2 bg-blue/5 border border-blue/20 rounded-xl focus:border-blue outline-none font-bold text-ink text-sm"
-                                     value={fee.travelling_fee || 0}
-                                     onChange={(e) => updateFee({ travelling_fee: e.target.value })}
-                                   />
-                                 </div>
-                                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                   <label className="text-[9px] font-black text-green-600 uppercase tracking-widest">Paid Amount (₹)</label>
-                                   <input
-                                     type="number"
-                                     className="px-3 py-2 bg-green-50 border border-green-100 rounded-xl focus:border-green-500 outline-none font-bold text-ink text-sm"
-                                     value={fee.paid_amount || 0}
-                                     onChange={(e) => updateFee({ paid_amount: e.target.value })}
-                                   />
-                                 </div>
-                                 <div className="flex flex-col items-center gap-2 shrink-0">
-                                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Fully Paid</label>
-                                   <div
-                                     onClick={() => updateFee({ paid_amount: isPaid ? 0 : (Number(fee.total_fee || 0) + Number(fee.hostel_fee || 0) + Number(fee.travelling_fee || 0)), payment_status: isPaid ? 'Pending' : 'Paid' })}
-                                     className={`w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer border-2 transition-all font-black text-lg select-none ${isPaid ? 'bg-green-100 border-green-400 text-green-600' : 'bg-gray-50 border-gray-200 text-gray-300 hover:border-green-300'}`}
-                                   >
-                                     {isPaid ? '✓' : '○'}
-                                   </div>
-                                 </div>
+                               </div>
+
+                               {/* Category Grid */}
+                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                 {categories.map(cat => {
+                                   const total = Number(fee[cat.keyTotal] || 0);
+                                   const paid = Number(fee[cat.keyPaid] || 0);
+                                   const due = Math.max(0, total - paid);
+
+                                   return (
+                                     <div key={cat.label} className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between gap-3">
+                                       <div className="flex items-center justify-between">
+                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">{cat.label}</span>
+                                         <button
+                                           type="button"
+                                           onClick={() => updateFee({ [cat.keyPaid]: paid >= total && total > 0 ? 0 : total })}
+                                           className={`text-[9px] font-bold px-2 py-0.5 rounded-md transition-colors ${paid >= total && total > 0 ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600 hover:bg-green-100'}`}
+                                         >
+                                           {paid >= total && total > 0 ? '✓ Paid' : 'Set Full'}
+                                         </button>
+                                       </div>
+
+                                       <div className="space-y-2">
+                                         <div>
+                                           <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
+                                           <input
+                                             type="number"
+                                             className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs"
+                                             value={fee[cat.keyTotal] || 0}
+                                             onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
+                                           />
+                                         </div>
+                                         <div>
+                                           <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
+                                           <input
+                                             type="number"
+                                             className="w-full px-3 py-1.5 bg-white border border-green-200 rounded-xl focus:border-green-500 outline-none font-bold text-green-700 text-xs"
+                                             value={fee[cat.keyPaid] || 0}
+                                             onChange={(e) => updateFee({ [cat.keyPaid]: e.target.value })}
+                                           />
+                                         </div>
+                                       </div>
+
+                                       <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between text-[10px]">
+                                         <span className="font-bold text-gray-400">Due:</span>
+                                         <span className={`font-black ${due > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                           ₹{due.toLocaleString()}
+                                         </span>
+                                       </div>
+                                     </div>
+                                   );
+                                 })}
                                </div>
                              </div>
                            );
                          })}
                        </div>
                     </div>
-
-                    {/* Detailed Fee Allocation & Breakdown Table */}
-                   <div className="mt-16 p-10 bg-gray-50/50 rounded-[3rem] border border-gray-100">
-                      <div className="flex items-center gap-4 mb-10">
-                        <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
-                           <RefreshCw size={24} />
-                        </div>
-                        <div>
-                           <h3 className="text-xl font-black text-ink">FEE ALLOCATION & BREAKDOWN</h3>
-                           <p className="text-[10px] text-muted uppercase font-black tracking-widest">Yearly Student Fee Details</p>
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                          <thead className="bg-ink text-white">
-                            <tr>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Academic Year</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Total Fee</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Committed Fee</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Admission Fee</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Practical Fee</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel</th>
-                              <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                            {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
-                              const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                                academic_year: year,
-                                total_fee: 0,
-                                committed_fee: 0,
-                                admission_fee: 0,
-                                practical_fee: 0,
-                                hostel_fee: 0,
-                                travelling_fee: 0,
-                                paid_amount: 0,
-                                payment_status: 'Pending'
-                              };
-
-                              const updateFee = (updates) => {
-                                const newFees = [...studentFees];
-                                const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
-                                if (index >= 0) {
-                                  newFees[index] = { ...newFees[index], ...updates };
-                                } else {
-                                  newFees.push({ ...fee, ...updates });
-                                }
-                                setStudentFees(newFees);
-                              };
-
-                              return (
-                                <tr key={year} className="hover:bg-gray-50/50 transition-colors">
-                                  <td className="p-4 font-black text-ink text-xs uppercase tracking-wider">{year}</td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.total_fee || 0}
-                                      onChange={(e) => updateFee({ total_fee: e.target.value })}
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.committed_fee || 0}
-                                      onChange={(e) => updateFee({ committed_fee: e.target.value })}
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.admission_fee || 0}
-                                      onChange={(e) => updateFee({ admission_fee: e.target.value })}
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.practical_fee || 0}
-                                      onChange={(e) => updateFee({ practical_fee: e.target.value })}
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.hostel_fee || 0}
-                                      onChange={(e) => updateFee({ hostel_fee: e.target.value })}
-                                    />
-                                  </td>
-                                  <td className="p-2">
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs"
-                                      value={fee.travelling_fee || 0}
-                                      onChange={(e) => updateFee({ travelling_fee: e.target.value })}
-                                    />
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                   </div>
 
                    <div className="mt-12 flex flex-col md:flex-row gap-4">
                       <button 

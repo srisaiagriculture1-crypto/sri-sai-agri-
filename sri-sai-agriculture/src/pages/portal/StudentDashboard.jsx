@@ -17,31 +17,51 @@ export default function StudentDashboard() {
 
   const getFeeStats = (fee, type) => {
     let allocated = 0;
-    if (type === 'Academic Fee') allocated = Number(fee.total_fee || 0);
-    else if (type === 'Practical Fee') allocated = Number(fee.practical_fee || 0);
-    else if (type === 'Hostel Fee') allocated = Number(fee.hostel_fee || 0);
-    else if (type === 'Travelling Expenses') allocated = Number(fee.travelling_fee || 0);
-    else if (type === 'Examination Fee') allocated = 1500;
+    let directPaid = 0;
 
-    const matchedProofs = (student?.payment_proofs || []).filter(p => 
-      p.fee_type === type && 
-      p.academic_year.toLowerCase().trim() === fee.academic_year.toLowerCase().trim()
-    );
-    
+    const normType = (type || '').toLowerCase().trim();
+
+    if (normType === 'academic fee' || normType === 'college fee') {
+      allocated = Number(fee.total_fee || 0);
+      directPaid = Number(fee.paid_amount || 0);
+    } else if (normType === 'hostel fee') {
+      allocated = Number(fee.hostel_fee || 0);
+      directPaid = Number(fee.hostel_fee_paid || 0);
+    } else if (normType === 'examination fee' || normType === 'exam fee') {
+      allocated = Number(fee.exam_fee || 0);
+      directPaid = Number(fee.exam_fee_paid || 0);
+    } else if (normType === 'practical fee') {
+      allocated = Number(fee.practical_fee || 0);
+      directPaid = Number(fee.practical_fee_paid || 0);
+    } else if (normType === 'travelling expenses' || normType === 'travelling fee') {
+      allocated = Number(fee.travelling_fee || 0);
+      directPaid = Number(fee.travelling_fee_paid || 0);
+    }
+
+    const matchedProofs = (student?.payment_proofs || []).filter(p => {
+      const pType = (p.fee_type || '').toLowerCase().trim();
+      const pYear = (p.academic_year || '').toLowerCase().trim();
+      const fYear = (fee.academic_year || '').toLowerCase().trim();
+
+      const typeMatches = pType === normType || 
+        (normType.includes('academic') && pType.includes('college')) ||
+        (normType.includes('travelling') && pType.includes('travelling')) ||
+        (normType.includes('exam') && pType.includes('exam'));
+
+      return typeMatches && pYear === fYear;
+    });
+
     const approvedPaid = matchedProofs
-      .filter(p => p.status.toLowerCase() === 'approved')
+      .filter(p => (p.status || '').toLowerCase() === 'approved')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
     const pendingPaid = matchedProofs
-      .filter(p => p.status.toLowerCase() === 'pending')
+      .filter(p => (p.status || '').toLowerCase() === 'pending')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    let paid = approvedPaid;
-    if (paid === 0 && type === 'Academic Fee') {
-      paid = Number(fee.paid_amount || 0);
-    }
-
+    const paid = Math.max(directPaid, approvedPaid);
     const balance = Math.max(0, allocated - paid);
+
     return { allocated, paid, pendingPaid, balance };
   };
 
@@ -520,53 +540,87 @@ export default function StudentDashboard() {
 
                {/* Fee Allocation & Breakdown in Profile */}
                {student.student_fees && student.student_fees.length > 0 && (
-                 <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
-                    <div className="p-6 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
-                             <Wallet size={20} />
-                          </div>
-                          <div>
-                             <h3 className="font-black text-sm uppercase tracking-wider text-ink">Fee Allocation &amp; Breakdown</h3>
-                             <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Yearly negotiated fee structure</p>
-                          </div>
-                       </div>
-                       <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full uppercase border border-amber-200">Committed Record</span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                         <thead>
-                            <tr className="bg-ink text-white">
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Academic Year</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Total Fee</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Committed Fee</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Admission Fee</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Practical Fee</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Hostel Fee</th>
-                               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Travelling Expenses</th>
-                            </tr>
-                         </thead>
-                         <tbody className="divide-y divide-gray-50">
-                            {student.student_fees.map((fee, idx) => {
-                               return (
-                                 <tr key={idx} className="hover:bg-amber-50/30 transition-colors">
-                                    <td className="px-6 py-5">
-                                       <span className="font-black text-ink text-xs uppercase tracking-wider">{fee.academic_year}</span>
-                                    </td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-ink">₹{Number(fee.total_fee || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-blue">₹{Number(fee.committed_fee || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-ink">₹{Number(fee.admission_fee || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-ink">₹{Number(fee.practical_fee || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-orange">₹{Number(fee.hostel_fee || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-center font-bold text-sm text-blue">₹{Number(fee.travelling_fee || 0).toLocaleString()}</td>
-                                 </tr>
-                               );
-                            })}
-                         </tbody>
-                      </table>
-                    </div>
-                 </div>
-               )}
+                  <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm p-6 space-y-6">
+                     <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 bg-blue/10 rounded-xl flex items-center justify-center text-blue">
+                              <Wallet size={20} />
+                           </div>
+                           <div>
+                              <h3 className="font-black text-sm uppercase tracking-wider text-ink">Fee Allocation &amp; Payment Status</h3>
+                              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Itemized Breakdown per Category &amp; Year</p>
+                           </div>
+                        </div>
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase border border-green-200">Verified Account</span>
+                     </div>
+
+                     <div className="space-y-6">
+                       {student.student_fees.map((fee, idx) => {
+                         const catList = [
+                           { title: 'College Fee', typeKey: 'College Fee' },
+                           { title: 'Hostel Fee', typeKey: 'Hostel Fee' },
+                           { title: 'Exam Fee', typeKey: 'Exam Fee' },
+                           { title: 'Practical Fee', typeKey: 'Practical Fee' },
+                           { title: 'Travelling Expenses', typeKey: 'Travelling Expenses' },
+                         ];
+
+                         const stats = catList.map(c => {
+                           const s = getFeeStats(fee, c.typeKey);
+                           return { title: c.title, ...s };
+                         });
+
+                         const yearTotalAllocated = stats.reduce((sum, item) => sum + item.allocated, 0);
+                         const yearTotalPaid = stats.reduce((sum, item) => sum + item.paid, 0);
+                         const yearTotalDue = Math.max(0, yearTotalAllocated - yearTotalPaid);
+
+                         return (
+                           <div key={idx} className="bg-gray-50/60 rounded-2xl p-5 border border-gray-100">
+                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-200/60">
+                               <div className="flex items-center gap-3">
+                                 <span className="px-3 py-1 bg-ink text-white font-black text-xs uppercase rounded-lg tracking-wider">{fee.academic_year}</span>
+                                 <span className="text-xs font-bold text-gray-500">Allocated: <strong className="text-ink">₹{yearTotalAllocated.toLocaleString()}</strong></span>
+                                 <span className="text-xs font-bold text-green-600">Paid: <strong>₹{yearTotalPaid.toLocaleString()}</strong></span>
+                               </div>
+                               <div>
+                                 {yearTotalAllocated > 0 && yearTotalDue === 0 ? (
+                                   <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase border border-green-200">✓ Fully Clear</span>
+                                 ) : yearTotalDue > 0 ? (
+                                   <span className="px-3 py-1 bg-orange-100 text-orange-700 text-[10px] font-black rounded-full uppercase border border-orange-200">Due: ₹{yearTotalDue.toLocaleString()}</span>
+                                 ) : (
+                                   <span className="px-3 py-1 bg-gray-100 text-gray-400 text-[10px] font-black rounded-full uppercase">Not Set</span>
+                                 )}
+                               </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                               {stats.map(item => (
+                                 <div key={item.title} className="bg-white p-3 rounded-xl border border-gray-100 shadow-2xs flex flex-col justify-between gap-2">
+                                   <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.title}</span>
+                                   <div>
+                                     <div className="flex justify-between items-baseline">
+                                       <span className="text-[10px] text-gray-400 font-bold">Total:</span>
+                                       <span className="text-xs font-black text-ink">₹{item.allocated.toLocaleString()}</span>
+                                     </div>
+                                     <div className="flex justify-between items-baseline">
+                                       <span className="text-[10px] text-green-600 font-bold">Paid:</span>
+                                       <span className="text-xs font-black text-green-600">₹{item.paid.toLocaleString()}</span>
+                                     </div>
+                                   </div>
+                                   <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-[10px]">
+                                     <span className="font-bold text-gray-400">Due:</span>
+                                     <span className={`font-black ${item.balance > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                       ₹{item.balance.toLocaleString()}
+                                     </span>
+                                   </div>
+                                 </div>
+                               ))}
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                  </div>
+                )}
             </div>
           )}
 
