@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "init-admin": "node initAdmin.js",
-    "build": "cd sri-sai-agriculture && npm install && CI=false npm run build",
+    "build": "cd sri-sai-agriculture && npm install && npx cross-env CI=false npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
