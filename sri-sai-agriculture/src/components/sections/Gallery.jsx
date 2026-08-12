@@ -4,6 +4,8 @@ import { useScrollReveal } from "../../hooks/useScrollReveal";
 import Reveal from "../ui/Reveal";
 import SectionHeader from "../ui/SectionHeader";
 
+import { getImageUrl } from "../../utils/imageUrl";
+
 // Robust API URL detection for development
 const API_URL = "/api";
 
@@ -92,7 +94,7 @@ export default function Gallery() {
                 )}
                 {item.type === 'video' ? (
                   <video 
-                    src={item.image?.startsWith('http') ? item.image : `${item.image?.startsWith('/') ? '' : '/'}${item.image}`} 
+                    src={getImageUrl(item.image)} 
                     className="w-full h-full object-cover" 
                     muted
                     loop
@@ -101,7 +103,7 @@ export default function Gallery() {
                   />
                 ) : (
                   <img 
-                    src={item.image?.startsWith('http') ? item.image : `${item.image?.startsWith('/') ? '' : '/'}${item.image}`} 
+                    src={getImageUrl(item.image)} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                     alt={item.label} 
                   />
@@ -141,14 +143,14 @@ export default function Gallery() {
           >
             {selectedImage.type === 'video' ? (
               <video 
-                src={selectedImage.image?.startsWith('http') ? selectedImage.image : `${selectedImage.image?.startsWith('/') ? '' : '/'}${selectedImage.image}`} 
+                src={getImageUrl(selectedImage.image)} 
                 controls 
                 autoPlay 
                 className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl animate-scale-up bg-black"
               />
             ) : (
               <img 
-                src={selectedImage.image?.startsWith('http') ? selectedImage.image : `${selectedImage.image?.startsWith('/') ? '' : '/'}${selectedImage.image}`} 
+                src={getImageUrl(selectedImage.image)} 
                 alt={selectedImage.label} 
                 className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl animate-scale-up"
               />
