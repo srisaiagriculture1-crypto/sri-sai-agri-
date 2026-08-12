@@ -145,11 +145,26 @@ export default function AdminDashboard() {
     { id: 'settings', label: 'Site Settings & Form', icon: Settings },
   ];
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use((config) => {
+      const token = localStorage.getItem("adminToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+    return () => axios.interceptors.request.eject(interceptor);
+  }, []);
+
   const checkAuth = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/admin/auth`, { withCredentials: true });
+      const token = localStorage.getItem("adminToken");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${API_URL}/admin/auth`, { headers, withCredentials: true });
       if (res.data.authenticated) {
         setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
       }
     } catch (err) {
       setIsAdmin(false);
@@ -358,7 +373,10 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
-      await axios.post(`${API_URL}/admin/login`, { username, password }, { withCredentials: true });
+      const res = await axios.post(`${API_URL}/admin/login`, { username, password }, { withCredentials: true });
+      if (res.data && res.data.token) {
+        localStorage.setItem("adminToken", res.data.token);
+      }
       setIsAdmin(true);
     } catch (err) {
       if (err.response) {
@@ -550,7 +568,10 @@ export default function AdminDashboard() {
   };
 
   const logout = async () => {
-    await axios.post(`${API_URL}/admin/logout`, {}, {withCredentials: true});
+    localStorage.removeItem("adminToken");
+    try {
+      await axios.post(`${API_URL}/admin/logout`, {}, { withCredentials: true });
+    } catch (err) {}
     setIsAdmin(false);
   };
 
