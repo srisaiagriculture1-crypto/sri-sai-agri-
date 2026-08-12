@@ -23,7 +23,11 @@ try {
   const app = express();
   const PORT = process.env.PORT || 5000;
 
-  app.use(cors());
+  app.use(cors({
+    origin: true,
+    credentials: true
+  }));
+  app.use(cookieParser());
   app.use(express.json());
   const uploadsDir = path.resolve(__dirname, "uploads");
   if (!fs.existsSync(uploadsDir)) {
@@ -188,10 +192,8 @@ try {
       `);
 
       // Add missing columns to staff table if they don't exist
-      try {
-        await pool.query(`ALTER TABLE staff ADD COLUMN IF NOT EXISTS employee_id VARCHAR(50)`);
-        await pool.query(`ALTER TABLE staff ADD COLUMN IF NOT EXISTS role VARCHAR(100)`);
-      } catch(e) { /* columns may already exist */ }
+      try { await pool.query(`ALTER TABLE staff ADD COLUMN employee_id VARCHAR(50)`); } catch(e) {}
+      try { await pool.query(`ALTER TABLE staff ADD COLUMN role VARCHAR(100)`); } catch(e) {}
 
       // Seed default staff account if staff table is empty
       try {
@@ -214,9 +216,7 @@ try {
           uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      try {
-        await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS excel_import_id INT DEFAULT NULL`);
-      } catch(e) { /* column may already exist */ }
+      try { await pool.query(`ALTER TABLE students ADD COLUMN excel_import_id INT DEFAULT NULL`); } catch(e) {}
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS staff_attendance (
