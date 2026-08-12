@@ -37,7 +37,9 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-[#F3F4F9] flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-gray-100">
         <div className="bg-blue p-10 text-center relative">
-          <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4 brightness-0 invert" />
+          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 mx-auto mb-4 flex items-center justify-center shadow-lg">
+             <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
+          </div>
           <h1 className="text-white font-lora text-2xl font-bold">Reset Password</h1>
           <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Sri Sai Agricultural College</p>
         </div>

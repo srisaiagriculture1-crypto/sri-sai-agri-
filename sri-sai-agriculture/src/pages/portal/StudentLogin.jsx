@@ -45,7 +45,9 @@ export default function StudentLogin() {
         {/* Header */}
         <div className="bg-blue p-10 text-center relative">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-          <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4 brightness-0 invert" />
+          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 mx-auto mb-4 flex items-center justify-center shadow-lg">
+             <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
+          </div>
           <h1 className="text-white font-lora text-2xl font-bold">Student Portal</h1>
           <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Sri Sai Agricultural College</p>
         </div>
