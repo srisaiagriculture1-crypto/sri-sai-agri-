@@ -22,7 +22,8 @@ import {
   Filter,
   FileSpreadsheet,
   Eye,
-  EyeOff
+  EyeOff,
+  Check
 } from 'lucide-react';
 
 const API_URL = '/api';
@@ -1416,15 +1417,17 @@ export default function AdminDashboard() {
                 </div>
 
                 {feeNoticeBanner && (
-                  <div className="mb-8 p-6 bg-green-50 border-2 border-green-500 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn shadow-lg shadow-green-500/10">
+                  <div className="mb-8 p-6 bg-[#f0fdf4] border-2 border-[#15803d] rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn shadow-lg shadow-[#15803d]/10">
                     <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 bg-green-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">✓</div>
+                       <div className="w-12 h-12 bg-[#15803d] text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
+                          <Check size={24} strokeWidth={3} className="text-white" />
+                       </div>
                        <div>
-                          <h4 className="font-black text-ink text-base">Payment Screenshot Approved for {feeNoticeBanner.studentName}</h4>
-                          <p className="text-xs font-bold text-green-700 mt-0.5">
+                          <h4 className="font-black text-[#064e3b] text-base">Payment Screenshot Approved for {feeNoticeBanner.studentName}</h4>
+                          <p className="text-xs font-bold text-[#15803d] mt-0.5">
                              Category: <span className="underline">{feeNoticeBanner.feeType}</span> | Academic Year: <span className="underline">{feeNoticeBanner.year}</span> | Amount Paid: <span className="underline">₹{Number(feeNoticeBanner.amount || 0).toLocaleString()}</span>
                           </p>
-                          <p className="text-[10px] text-muted font-bold uppercase tracking-wider mt-1">
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">
                              Payment proof verified. Review fee breakdown below and click "SYNC & CREATE ENTRY" to save student details.
                           </p>
                        </div>
@@ -1434,9 +1437,9 @@ export default function AdminDashboard() {
                          href={getImageUrl(feeNoticeBanner.screenshot)} 
                          target="_blank" 
                          rel="noreferrer"
-                         className="px-5 py-2.5 bg-green-600 text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-green-700 transition-all shrink-0 shadow-md flex items-center gap-2"
+                         className="px-6 py-3 bg-[#15803d] text-white hover:bg-[#166534] rounded-xl font-black text-xs uppercase tracking-wider transition-all shrink-0 shadow-md flex items-center gap-2"
                        >
-                          <Eye size={16} /> View Screenshot ↗
+                          <Eye size={16} className="text-white" /> View Screenshot ↗
                        </a>
                     )}
                   </div>
