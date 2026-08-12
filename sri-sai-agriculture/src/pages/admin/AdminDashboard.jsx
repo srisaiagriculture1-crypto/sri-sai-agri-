@@ -762,7 +762,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex gap-3">
-              {activeTab !== 'enquiries' && activeTab !== 'staff' && (
+              {activeTab !== 'enquiries' && activeTab !== 'staff' && activeTab !== 'feeNotifications' && (
                 <button 
                   onClick={() => {
                     if (viewMode === 'form' || viewMode === 'student-manage') {
@@ -2134,119 +2134,6 @@ export default function AdminDashboard() {
                 ))}
               </div>
             </div>
-          ) : viewMode === 'list' ? (
-            <div className="bg-white rounded-3xl shadow-xl shadow-ink/5 border border-gray-100 overflow-hidden">
-              <div className="p-8 border-b border-gray-50 flex items-center justify-between">
-                 <h4 className="font-bold text-ink">Database Registry</h4>
-                 {activeTab === 'gallery' && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl">
-                      <Filter size={14} className="text-gray-400" />
-                      <select className="bg-transparent text-xs font-bold text-ink focus:outline-none" value={galleryFilter} onChange={(e) => setGalleryFilter(e.target.value)}>
-                        <option value="all">All Categories</option>
-                        <option value="internship">Internship</option>
-                        <option value="field-visit">Field Visit</option>
-                        <option value="event">Event</option>
-                        <option value="trip">Trip</option>
-                      </select>
-                    </div>
-                 )}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-100">
-                  <thead>
-                    <tr className="bg-gray-50/30">
-                      <th className="px-10 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Primary Detail</th>
-                      <th className="px-10 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Segment</th>
-                      <th className="px-10 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-50">
-                    {data
-                      .filter(item => {
-                        if (activeTab === 'gallery' && galleryFilter !== 'all') {
-                          const cat = (item.category || item.sub_label || '').toLowerCase();
-                          if (galleryFilter === 'internship') return cat.includes('intern');
-                          if (galleryFilter === 'field-visit') return cat.includes('field');
-                          if (galleryFilter === 'event') return cat.includes('event');
-                          if (galleryFilter === 'trip') return cat.includes('trip');
-                          return false;
-                        }
-                        return true;
-                      })
-                      .map((item, idx) => (
-                      <tr key={item._id || `item-${idx}`} className="group hover:bg-sky/50 transition-colors">
-                        <td className="px-10 py-6">
-                          <div className="flex items-center">
-                                <div className="h-14 w-14 rounded-2xl bg-gray-100 overflow-hidden mr-5 border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-500">
-                                  {item.image || item.photo ? (
-                                    (item.type === 'video' || (typeof (item.image || item.photo) === 'string' && (item.image || item.photo).toLowerCase().endsWith('.mp4'))) ? (
-                                      <div className="h-full w-full flex items-center justify-center bg-sky/30 text-blue">
-                                        <div className="p-2 bg-white rounded-full shadow-sm">
-                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <img 
-                                        src={getImageUrl(item.image || item.photo)} 
-                                        className="h-full w-full object-cover" 
-                                        alt="" 
-                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
-                                      />
-                                    )
-                                  ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-gray-400 font-bold text-base bg-gray-50 uppercase">
-                                      {item.initials || item.name?.[0] || item.label?.[0] || "?"}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-ink">{item.student_name || item.studentName || item.name || item.title || item.label || item.tag}</span>
-                                  <span className="text-[9px] uppercase font-black text-gray-300 mt-1 tracking-widest">{item.id || item._id}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-10 py-6">
-                              <span className="px-4 py-1.5 rounded-xl bg-sky border border-blue/10 text-blue text-[10px] font-black uppercase shadow-sm shadow-blue/5">
-                                {item.department || item.stream || item.exam || item.category || item.achievement || item.sub_label || item.hall_ticket_number || item.hallTicketNumber || 'Default'}
-                              </span>
-                            </td>
-                            <td className="px-10 py-6 text-right">
-                              <div className="flex justify-end gap-3">
-                                <button 
-                                  onClick={() => handleEdit(item)} 
-                                  className="p-3 bg-blue/5 text-blue rounded-xl hover:bg-blue hover:text-white transition-all shadow-sm shadow-blue/5"
-                                  title="Edit"
-                                >
-                                  <Edit3 size={16} />
-                                </button>
-                                <button 
-                                  onClick={() => handleDelete(item.id || item._id)} 
-                                  className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm shadow-red/5"
-                                  title="Remove"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                    ))}
-                    {data.length === 0 && (
-                      <tr>
-                        <td colSpan="3" className="px-10 py-32 text-center">
-                          <div className="flex flex-col items-center gap-4 opacity-30">
-                             <LayoutDashboard size={64} />
-                             <div>
-                                <p className="text-lg font-bold text-ink">No entries found</p>
-                                <p className="text-xs font-medium">Start by adding your first record above</p>
-                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           ) : activeTab === 'feeNotifications' ? (
             <div className="space-y-8 animate-fadeIn">
               <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
@@ -2380,6 +2267,119 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          ) : viewMode === 'list' ? (
+            <div className="bg-white rounded-3xl shadow-xl shadow-ink/5 border border-gray-100 overflow-hidden">
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                 <h4 className="font-bold text-ink">Database Registry</h4>
+                 {activeTab === 'gallery' && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl">
+                      <Filter size={14} className="text-gray-400" />
+                      <select className="bg-transparent text-xs font-bold text-ink focus:outline-none" value={galleryFilter} onChange={(e) => setGalleryFilter(e.target.value)}>
+                        <option value="all">All Categories</option>
+                        <option value="internship">Internship</option>
+                        <option value="field-visit">Field Visit</option>
+                        <option value="event">Event</option>
+                        <option value="trip">Trip</option>
+                      </select>
+                    </div>
+                 )}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100">
+                  <thead>
+                    <tr className="bg-gray-50/30">
+                      <th className="px-10 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Primary Detail</th>
+                      <th className="px-10 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Segment</th>
+                      <th className="px-10 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-50">
+                    {data
+                      .filter(item => {
+                        if (activeTab === 'gallery' && galleryFilter !== 'all') {
+                          const cat = (item.category || item.sub_label || '').toLowerCase();
+                          if (galleryFilter === 'internship') return cat.includes('intern');
+                          if (galleryFilter === 'field-visit') return cat.includes('field');
+                          if (galleryFilter === 'event') return cat.includes('event');
+                          if (galleryFilter === 'trip') return cat.includes('trip');
+                          return false;
+                        }
+                        return true;
+                      })
+                      .map((item, idx) => (
+                      <tr key={item._id || `item-${idx}`} className="group hover:bg-sky/50 transition-colors">
+                        <td className="px-10 py-6">
+                          <div className="flex items-center">
+                                <div className="h-14 w-14 rounded-2xl bg-gray-100 overflow-hidden mr-5 border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-500">
+                                  {item.image || item.photo ? (
+                                    (item.type === 'video' || (typeof (item.image || item.photo) === 'string' && (item.image || item.photo).toLowerCase().endsWith('.mp4'))) ? (
+                                      <div className="h-full w-full flex items-center justify-center bg-sky/30 text-blue">
+                                        <div className="p-2 bg-white rounded-full shadow-sm">
+                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <img 
+                                        src={getImageUrl(item.image || item.photo)} 
+                                        className="h-full w-full object-cover" 
+                                        alt="" 
+                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
+                                      />
+                                    )
+                                  ) : (
+                                    <div className="h-full w-full flex items-center justify-center text-gray-400 font-bold text-base bg-gray-50 uppercase">
+                                      {item.initials || item.name?.[0] || item.label?.[0] || "?"}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-ink">{item.student_name || item.studentName || item.name || item.title || item.label || item.tag}</span>
+                                  <span className="text-[9px] uppercase font-black text-gray-300 mt-1 tracking-widest">{item.id || item._id}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-10 py-6">
+                              <span className="px-4 py-1.5 rounded-xl bg-sky border border-blue/10 text-blue text-[10px] font-black uppercase shadow-sm shadow-blue/5">
+                                {item.department || item.stream || item.exam || item.category || item.achievement || item.sub_label || item.hall_ticket_number || item.hallTicketNumber || 'Default'}
+                              </span>
+                            </td>
+                            <td className="px-10 py-6 text-right">
+                              <div className="flex justify-end gap-3">
+                                <button 
+                                  onClick={() => handleEdit(item)} 
+                                  className="p-3 bg-blue/5 text-blue rounded-xl hover:bg-blue hover:text-white transition-all shadow-sm shadow-blue/5"
+                                  title="Edit"
+                                >
+                                  <Edit3 size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(item.id || item._id)} 
+                                  className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm shadow-red/5"
+                                  title="Remove"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                    ))}
+                    {data.length === 0 && (
+                      <tr>
+                        <td colSpan="3" className="px-10 py-32 text-center">
+                          <div className="flex flex-col items-center gap-4 opacity-30">
+                             <LayoutDashboard size={64} />
+                             <div>
+                                <p className="text-lg font-bold text-ink">No entries found</p>
+                                <p className="text-xs font-medium">Start by adding your first record above</p>
+                             </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : null}
