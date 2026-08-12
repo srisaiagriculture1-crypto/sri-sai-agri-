@@ -641,20 +641,28 @@ router.post("/admin/import", authenticate, excelUpload.single("file"), async (re
         return null;
       };
 
-      const emailKey = findValue(rowKeys, ["email", "email_id", "emailid", "email_address", "emailaddress"], ["email"], ["personal"]);
-      const email = emailKey ? normalizedRow[emailKey].toString().trim() : "";
-
-      const studentNameKey = findValue(rowKeys, ["student_name", "name", "fullname", "full_name", "studentname"], ["name"], ["father", "mother", "parent"]);
+      const studentNameKey = findValue(rowKeys, ["student_name", "name", "fullname", "full_name", "studentname", "student"], ["name"], ["father", "mother", "parent"]);
       const student_name = studentNameKey ? normalizedRow[studentNameKey].toString().trim() : "";
 
-      const rollNoKey = findValue(rowKeys, ["roll_no", "rollno", "roll_number", "rollnumber"], ["roll", "reg"]);
+      const rollNoKey = findValue(rowKeys, ["roll_no", "rollno", "roll_number", "rollnumber", "sno", "sl_no", "slno", "id"], ["roll", "reg", "sno"]);
       const roll_no = rollNoKey ? normalizedRow[rollNoKey].toString().trim() : "";
 
-      const branchKey = findValue(rowKeys, ["branch", "branch_name", "specialization"], ["branch", "spec"]);
+      const emailKey = findValue(rowKeys, ["email", "email_id", "emailid", "email_address", "emailaddress"], ["email"], ["personal"]);
+      let email = emailKey ? normalizedRow[emailKey].toString().trim() : "";
+
+      if (!email) {
+        if (roll_no) {
+          email = `${roll_no.toLowerCase().replace(/[^a-z0-9]/g, "")}@srisai.com`;
+        } else if (student_name) {
+          email = `${student_name.toLowerCase().replace(/[^a-z0-9]/g, "")}${Math.floor(100 + Math.random() * 900)}@srisai.com`;
+        }
+      }
+
+      const branchKey = findValue(rowKeys, ["branch", "branch_name", "specialization", "course"], ["branch", "spec"]);
       const branch = branchKey ? normalizedRow[branchKey].toString().trim() : "";
 
       const courseKey = findValue(rowKeys, ["course_applied", "course", "courseapplied", "course_name"], ["course"]);
-      const course_applied = courseKey ? normalizedRow[courseKey].toString().trim() : "";
+      const course_applied = courseKey ? normalizedRow[courseKey].toString().trim() : (branch || "Ag. B.Sc.");
 
       const enrolledYearKey = findValue(rowKeys, ["academic_enrolled_year", "enrolled_year", "academic_year", "enrolledyear", "batch", "academicyear"], ["enrolled", "batch", "academic"]);
       const academic_enrolled_year = enrolledYearKey ? normalizedRow[enrolledYearKey].toString().trim() : "";
@@ -729,19 +737,14 @@ router.post("/admin/import", authenticate, excelUpload.single("file"), async (re
       const currentYearKey = findValue(rowKeys, ["current_year", "currentyear", "year", "year_level"], ["current_year", "year_level"]);
       const current_year = currentYearKey ? normalizedRow[currentYearKey].toString().trim() : "1st year";
 
-      if (!email && !student_name) {
+      if (!student_name && !roll_no && !email) {
         skippedCount++;
-        skippedStudents.push({ name: "Row " + (rawRows.indexOf(row) + 2), reason: "Missing both Email and Student Name" });
+        skippedStudents.push({ name: "Row " + (rawRows.indexOf(row) + 2), reason: "Empty student row" });
         continue;
       }
       if (!student_name) {
         skippedCount++;
         skippedStudents.push({ name: "Row " + (rawRows.indexOf(row) + 2), reason: "Missing Student Name" });
-        continue;
-      }
-      if (!email) {
-        skippedCount++;
-        skippedStudents.push({ name: student_name, reason: "Missing Email address" });
         continue;
       }
 

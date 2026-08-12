@@ -451,7 +451,9 @@ export default function AdminDashboard() {
         fetchExcelImports();
         fetchStudents();
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to parse and import Excel file.");
+        console.error("Excel import error:", err);
+        const errMsg = err.response?.data?.message || err.message || "Failed to parse and import Excel file.";
+        alert(`Failed to import Excel file.\n\nReason: ${errMsg}`);
       } finally {
         setLoading(false);
       }
