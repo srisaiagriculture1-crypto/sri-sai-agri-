@@ -26,6 +26,8 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
             practical_fee = ?, practical_fee_paid = ?,
             travelling_fee = ?, travelling_fee_paid = ?,
             committed_fee = ?, admission_fee = ?, 
+            breakdown_total_fee = ?, breakdown_practical_fee = ?,
+            breakdown_hostel_fee = ?, breakdown_travelling_fee = ?,
             payment_status = ?
           WHERE student_id = ? AND LOWER(academic_year) = LOWER(?)`,
           [
@@ -35,6 +37,8 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
             Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
             Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
             Number(fee.committed_fee || 0), Number(fee.admission_fee || 0),
+            Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
+            Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),
             fee.payment_status || 'Pending',
             studentId, year
           ]
@@ -47,8 +51,11 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
             exam_fee, exam_fee_paid,
             practical_fee, practical_fee_paid,
             travelling_fee, travelling_fee_paid,
-            committed_fee, admission_fee, payment_status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            committed_fee, admission_fee,
+            breakdown_total_fee, breakdown_practical_fee,
+            breakdown_hostel_fee, breakdown_travelling_fee,
+            payment_status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             studentId, year,
             Number(fee.total_fee || 0), Number(fee.paid_amount || 0),
@@ -57,6 +64,8 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
             Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
             Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
             Number(fee.committed_fee || 0), Number(fee.admission_fee || 0),
+            Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
+            Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),
             fee.payment_status || 'Pending'
           ]
         );

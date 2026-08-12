@@ -1279,7 +1279,7 @@ export default function AdminDashboard() {
                         />
                       </div>
 
-                      {/* Fee Breakdown - Read Only Display */}
+                      {/* Fee Breakdown - Showcase Structure Table */}
                       <div className="col-span-full mt-6 p-6 bg-gray-50/50 rounded-2xl border border-gray-100">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
@@ -1287,35 +1287,57 @@ export default function AdminDashboard() {
                           </div>
                           <div>
                             <h4 className="font-bold text-ink text-sm uppercase tracking-tight">Fee Breakdown</h4>
-                            <p className="text-[9px] text-muted uppercase font-black tracking-widest">Summary view — enter actual amounts in Partial Payments below</p>
+                            <p className="text-[9px] text-muted uppercase font-black tracking-widest">Specify yearly fee structure for showcasing in student account</p>
                           </div>
                         </div>
                         <div className="overflow-x-auto border border-gray-100 rounded-xl">
                           <table className="w-full border-collapse bg-white text-xs">
                             <thead className="bg-[#15803d] text-white">
                               <tr>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Year</th>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">College Fee</th>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Hostel Fee</th>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Exam Fee</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Academic Year</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Total Fee</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Committed Fee</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Admission Fee</th>
                                 <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Practical Fee</th>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Travelling</th>
-                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Total</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Hostel</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                               {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
-                                const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || { total_fee: 0, hostel_fee: 0, exam_fee: 0, practical_fee: 0, travelling_fee: 0 };
-                                const rowTotal = [fee.total_fee, fee.hostel_fee, fee.exam_fee, fee.practical_fee, fee.travelling_fee].reduce((s, v) => s + Number(v || 0), 0);
+                                const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
+                                  academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                };
+                                const updateFee = (updates) => {
+                                  const newFees = [...studentFees];
+                                  const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
+                                  if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
+                                  else newFees.push({ ...fee, ...updates });
+                                  setStudentFees(newFees);
+                                };
+                                const fields = [
+                                  { key: 'breakdown_total_fee', placeholder: '0' },
+                                  { key: 'committed_fee', placeholder: '0' },
+                                  { key: 'admission_fee', placeholder: '0' },
+                                  { key: 'breakdown_practical_fee', placeholder: '0' },
+                                  { key: 'breakdown_hostel_fee', placeholder: '0' },
+                                  { key: 'breakdown_travelling_fee', placeholder: '0' },
+                                ];
                                 return (
                                   <tr key={year} className="hover:bg-gray-50/50">
                                     <td className="p-3 font-black text-ink uppercase text-[9px]">{year}</td>
-                                    <td className="p-3 font-bold text-gray-600">₹{Number(fee.total_fee || 0).toLocaleString()}</td>
-                                    <td className="p-3 font-bold text-gray-600">₹{Number(fee.hostel_fee || 0).toLocaleString()}</td>
-                                    <td className="p-3 font-bold text-gray-600">₹{Number(fee.exam_fee || 0).toLocaleString()}</td>
-                                    <td className="p-3 font-bold text-gray-600">₹{Number(fee.practical_fee || 0).toLocaleString()}</td>
-                                    <td className="p-3 font-bold text-gray-600">₹{Number(fee.travelling_fee || 0).toLocaleString()}</td>
-                                    <td className="p-3 font-black text-[#15803d]">₹{rowTotal.toLocaleString()}</td>
+                                    {fields.map(fld => (
+                                      <td key={fld.key} className="p-2">
+                                        <input 
+                                          type="number" 
+                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          value={fee[fld.key] === 0 || fee[fld.key] === '0' || !fee[fld.key] ? '' : fee[fld.key]}
+                                          placeholder={fld.placeholder}
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => updateFee({ [fld.key]: e.target.value })}
+                                        />
+                                      </td>
+                                    ))}
                                   </tr>
                                 );
                               })}
@@ -1564,7 +1586,7 @@ export default function AdminDashboard() {
                     </div>
 
 
-                     {/* Fee Breakdown - Read Only Display */}
+                     {/* Fee Breakdown - Showcase Structure Table */}
                      <div className="mt-12 p-8 bg-gray-50/50 rounded-3xl border border-gray-100">
                         <div className="flex items-center gap-4 mb-6">
                            <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
@@ -1572,7 +1594,7 @@ export default function AdminDashboard() {
                            </div>
                            <div>
                               <h4 className="font-bold text-ink uppercase tracking-tight">FEE BREAKDOWN</h4>
-                              <p className="text-[10px] text-muted uppercase font-black tracking-widest">Summary view — enter actual amounts in Partial Payments below</p>
+                              <p className="text-[10px] text-muted uppercase font-black tracking-widest">Specify yearly fee structure for showcasing in student account</p>
                            </div>
                         </div>
                         <div className="overflow-x-auto border border-gray-100 rounded-2xl shadow-sm">
@@ -1580,27 +1602,49 @@ export default function AdminDashboard() {
                               <thead className="bg-[#15803d] text-white">
                                  <tr>
                                     <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Academic Year</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">College Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Exam Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Total Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Committed Fee</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Admission Fee</th>
                                     <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Practical Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Total</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-50">
                                  {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
-                                    const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || { total_fee: 0, hostel_fee: 0, exam_fee: 0, practical_fee: 0, travelling_fee: 0 };
-                                    const rowTotal = [fee.total_fee, fee.hostel_fee, fee.exam_fee, fee.practical_fee, fee.travelling_fee].reduce((s, v) => s + Number(v || 0), 0);
+                                    const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
+                                       academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                    };
+                                    const updateFee = (updates) => {
+                                       const newFees = [...studentFees];
+                                       const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
+                                       if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
+                                       else newFees.push({ ...fee, ...updates });
+                                       setStudentFees(newFees);
+                                    };
+                                    const fields = [
+                                       { key: 'breakdown_total_fee', placeholder: '0' },
+                                       { key: 'committed_fee', placeholder: '0' },
+                                       { key: 'admission_fee', placeholder: '0' },
+                                       { key: 'breakdown_practical_fee', placeholder: '0' },
+                                       { key: 'breakdown_hostel_fee', placeholder: '0' },
+                                       { key: 'breakdown_travelling_fee', placeholder: '0' },
+                                    ];
                                     return (
                                        <tr key={year} className="hover:bg-gray-50/50">
                                           <td className="p-4 font-black text-ink text-xs uppercase tracking-wider">{year}</td>
-                                          <td className="p-4 font-bold text-gray-600 text-xs">₹{Number(fee.total_fee || 0).toLocaleString()}</td>
-                                          <td className="p-4 font-bold text-gray-600 text-xs">₹{Number(fee.hostel_fee || 0).toLocaleString()}</td>
-                                          <td className="p-4 font-bold text-gray-600 text-xs">₹{Number(fee.exam_fee || 0).toLocaleString()}</td>
-                                          <td className="p-4 font-bold text-gray-600 text-xs">₹{Number(fee.practical_fee || 0).toLocaleString()}</td>
-                                          <td className="p-4 font-bold text-gray-600 text-xs">₹{Number(fee.travelling_fee || 0).toLocaleString()}</td>
-                                          <td className="p-4 font-black text-[#15803d] text-xs">₹{rowTotal.toLocaleString()}</td>
+                                          {fields.map(fld => (
+                                             <td key={fld.key} className="p-2">
+                                                <input 
+                                                   type="number" 
+                                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                   value={fee[fld.key] === 0 || fee[fld.key] === '0' || !fee[fld.key] ? '' : fee[fld.key]}
+                                                   placeholder={fld.placeholder}
+                                                   onFocus={(e) => e.target.select()}
+                                                   onChange={(e) => updateFee({ [fld.key]: e.target.value })}
+                                                />
+                                             </td>
+                                          ))}
                                        </tr>
                                     );
                                  })}

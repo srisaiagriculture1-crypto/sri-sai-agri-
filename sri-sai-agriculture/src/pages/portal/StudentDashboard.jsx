@@ -236,6 +236,43 @@ export default function StudentDashboard() {
                   <h2 className="text-2xl font-black text-ink mb-2">Sri Sai Fee Portal</h2>
                   <p className="text-muted font-medium mb-8">Select a Fee Category to View Details & Upload Payment Screenshots</p>
                   
+                  {/* Showcased Fee Breakdown Structure from Admin */}
+                  {student.student_fees && student.student_fees.length > 0 && (
+                     <div className="mb-8 p-6 bg-gray-50/70 rounded-2xl border border-gray-100 text-left">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-ink mb-3 flex items-center gap-2">
+                           <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> Official Fee Structure Breakdown
+                        </h3>
+                        <div className="overflow-x-auto rounded-xl border border-gray-200/60 bg-white">
+                           <table className="w-full text-xs text-left border-collapse">
+                              <thead className="bg-[#15803d] text-white">
+                                 <tr>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Academic Year</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Total Fee</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Committed Fee</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Admission Fee</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Practical Fee</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Hostel</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Travelling Expenses</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                 {student.student_fees.map((fee, fIdx) => (
+                                    <tr key={fIdx} className="hover:bg-gray-50/50">
+                                       <td className="p-3 font-black text-ink uppercase text-[10px]">{fee.academic_year}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_total_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.committed_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.admission_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_practical_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_hostel_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_travelling_fee || 0).toLocaleString()}</td>
+                                    </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
+                  )}
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                      <PaymentOption 
                         icon="Book" 

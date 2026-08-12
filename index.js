@@ -256,7 +256,11 @@ try {
         "practical_fee DECIMAL(10,2) DEFAULT 0",
         "practical_fee_paid DECIMAL(10,2) DEFAULT 0",
         "travelling_fee DECIMAL(10,2) DEFAULT 0",
-        "travelling_fee_paid DECIMAL(10,2) DEFAULT 0"
+        "travelling_fee_paid DECIMAL(10,2) DEFAULT 0",
+        "breakdown_total_fee DECIMAL(10,2) DEFAULT 0",
+        "breakdown_practical_fee DECIMAL(10,2) DEFAULT 0",
+        "breakdown_hostel_fee DECIMAL(10,2) DEFAULT 0",
+        "breakdown_travelling_fee DECIMAL(10,2) DEFAULT 0"
       ];
       for (const colDef of feeCols) {
         try {
