@@ -193,6 +193,19 @@ try {
         await pool.query(`ALTER TABLE staff ADD COLUMN IF NOT EXISTS role VARCHAR(100)`);
       } catch(e) { /* columns may already exist */ }
 
+      // Seed default staff account if staff table is empty
+      try {
+        const [staffRows] = await pool.query("SELECT id FROM staff LIMIT 1");
+        if (staffRows.length === 0) {
+          const staffPass = await bcrypt.hash("password123", 10);
+          await pool.query(
+            "INSERT INTO staff (employee_id, name, email, password, department, role) VALUES (?, ?, ?, ?, ?, ?)",
+            ["EMP001", "Admin Staff", "staff@srisai.com", staffPass, "Administration", "Manager"]
+          );
+          console.log("✨ Default staff account created!");
+        }
+      } catch(e) { console.error("Staff seed note:", e.message); }
+
       // Excel Imports Migration
       await pool.query(`
         CREATE TABLE IF NOT EXISTS excel_imports (

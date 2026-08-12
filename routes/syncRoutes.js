@@ -4,6 +4,10 @@ const pool = require("../utils/db");
 const authenticate = require("../utils/authMiddleware");
 
 const DATA = {
+  staff: [
+    { employee_id: "EMP001", name: "Admin Staff", email: "staff@srisai.com", password: "password123", department: "Administration", role: "Manager" },
+    { employee_id: "EMP002", name: "Ramesh Staff", email: "ramesh@srisai.com", password: "password123", department: "Agri Science", role: "Assistant" }
+  ],
   faculty: [
     { name: "Divi Vamsi Krishna", initials: "DV", department: "Agriculture", experience: "Lead Faculty", category: "Agriculture" },
     { name: "Sudhineedi Ramesh", initials: "SR", department: "Science", experience: "Research Expert", category: "Science" },
