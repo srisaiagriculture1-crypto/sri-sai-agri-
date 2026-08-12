@@ -391,6 +391,46 @@ export default function AdminDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (activeTab === 'imports') {
+      if (!file) return alert("Please select an Excel file (.xlsx or .csv) to import.");
+      
+      const confirmImport = window.confirm(`Are you sure you want to import students from "${file.name}"?`);
+      if (!confirmImport) return;
+
+      const excelFormData = new FormData();
+      excelFormData.append("file", file);
+
+      try {
+        setLoading(true);
+        const res = await axios.post(`${API_URL}/students/admin/import`, excelFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true
+        });
+
+        const { message, importedCount, skippedCount, skippedStudents } = res.data;
+        let alertMsg = message || `Successfully imported ${importedCount} students.`;
+        if (skippedCount > 0) {
+          alertMsg += `\n\nSkipped ${skippedCount} student(s):`;
+          skippedStudents.forEach((s) => {
+            alertMsg += `\n• ${s.name || "Unknown"}${s.email ? " (" + s.email + ")" : ""}: ${s.reason}`;
+          });
+        }
+        alert(alertMsg);
+        setFormData({});
+        setFile(null);
+        setEditingId(null);
+        setViewMode('list');
+        fetchExcelImports();
+        fetchStudents();
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to parse and import Excel file.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     const payload = new FormData();
     Object.keys(formData).forEach(key => {
       if (!['_id', 'id', 'image', 'created_at', 'existing_image'].includes(key)) {
