@@ -34,12 +34,15 @@ try {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  // Explicit route handler for serving upload files dynamically
+  // Explicit route handler for serving upload files dynamically across versioned deployments & persistent shared_uploads
   app.get("/uploads/:filename", (req, res) => {
-    const filename = req.params.filename;
+    const filename = path.basename(req.params.filename);
     const possiblePaths = [
       path.resolve(__dirname, "uploads", filename),
       path.resolve(process.cwd(), "uploads", filename),
+      path.resolve(__dirname, "..", "uploads", filename),
+      path.resolve(__dirname, "..", "shared_uploads", filename),
+      path.resolve(__dirname, "..", "..", "shared_uploads", filename),
       path.resolve(__dirname, "sri-sai-agriculture", "uploads", filename),
       path.resolve(process.cwd(), "sri-sai-agriculture", "uploads", filename)
     ];
@@ -49,6 +52,38 @@ try {
         return res.sendFile(p);
       }
     }
+
+    // Dynamic search across Hostinger hbuilds version folders and domain persistent shared_uploads
+    try {
+      const normDir = __dirname.replace(/\\/g, '/');
+      const parts = normDir.split('/hbuilds/versions/');
+      if (parts.length > 1) {
+        const domainRoot = parts[0];
+        const sharedDir = path.join(domainRoot, 'shared_uploads');
+        const sharedFile = path.join(sharedDir, filename);
+        if (fs.existsSync(sharedFile) && fs.statSync(sharedFile).isFile()) {
+          return res.sendFile(sharedFile);
+        }
+
+        const versionsDir = path.join(domainRoot, 'hbuilds', 'versions');
+        if (fs.existsSync(versionsDir)) {
+          const versions = fs.readdirSync(versionsDir);
+          for (const ver of versions) {
+            const verUpload1 = path.join(versionsDir, ver, 'nodejs', 'uploads', filename);
+            if (fs.existsSync(verUpload1) && fs.statSync(verUpload1).isFile()) {
+              return res.sendFile(verUpload1);
+            }
+            const verUpload2 = path.join(versionsDir, ver, 'uploads', filename);
+            if (fs.existsSync(verUpload2) && fs.statSync(verUpload2).isFile()) {
+              return res.sendFile(verUpload2);
+            }
+          }
+        }
+      }
+    } catch(e) {
+      console.error("Hostinger version search note:", e.message);
+    }
+
     res.status(404).send("File not found");
   });
 

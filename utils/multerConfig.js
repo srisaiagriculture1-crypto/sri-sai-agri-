@@ -2,8 +2,23 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Ensure uploads directory exists relative to backend root
-const uploadDir = path.resolve(__dirname, "..", "uploads");
+let uploadDir = path.resolve(__dirname, "..", "uploads");
+
+// Handle persistent storage on Hostinger versioned deployments
+try {
+  const normDir = __dirname.replace(/\\/g, '/');
+  const parts = normDir.split('/hbuilds/versions/');
+  if (parts.length > 1) {
+    const persistentDir = path.join(parts[0], 'shared_uploads');
+    if (!fs.existsSync(persistentDir)) {
+      fs.mkdirSync(persistentDir, { recursive: true });
+    }
+    uploadDir = persistentDir;
+  }
+} catch (e) {
+  console.error("Multer dir init:", e.message);
+}
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
