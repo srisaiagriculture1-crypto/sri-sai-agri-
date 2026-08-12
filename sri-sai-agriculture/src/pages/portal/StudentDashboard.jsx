@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const API_URL = "/api";
 
@@ -25,6 +27,146 @@ export default function StudentDashboard() {
     }
     const filename = cleanPath.split('/').pop();
     return `/uploads/${filename}`;
+  };
+
+  const downloadFeeInvoice = (payment, studentData) => {
+    try {
+      const doc = new jsPDF("p", "pt", "a4");
+      const greenColor = [21, 128, 61];
+
+      // Header Banner
+      doc.setFillColor(...greenColor);
+      doc.rect(0, 0, 595.28, 90, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("SRI SAI INSTITUTE OF AGRICULTURAL SCIENCES", 40, 40);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("OFFICIAL FEE PAYMENT RECEIPT & INVOICE", 40, 58);
+      doc.text("Sri Sai Agricultural College, Andhra Pradesh", 40, 72);
+
+      const receiptNo = `INV-${new Date(payment.created_at || Date.now()).getFullYear()}-${String(payment.id || Math.floor(Math.random() * 90000 + 10000)).padStart(6, '0')}`;
+      const paidDate = payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-GB');
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text(`RECEIPT NO: ${receiptNo}`, 555, 45, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.text(`DATE: ${paidDate}`, 555, 60, { align: "right" });
+      doc.text(`STATUS: ${String(payment.status || 'APPROVED').toUpperCase()}`, 555, 75, { align: "right" });
+
+      // Student Info Card
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "F");
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "D");
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("STUDENT DETAILS", 55, 130);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Student Name:", 55, 148);
+      doc.setFont("helvetica", "normal");
+      doc.text(studentData?.student_name || "N/A", 140, 148);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Roll / ID No:", 55, 164);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(studentData?.roll_no || studentData?.id || "N/A"), 140, 164);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Course & Branch:", 55, 180);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${studentData?.course_applied || 'B.Sc. Agriculture'} (${studentData?.branch || 'General'})`, 140, 180);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Academic Year:", 320, 148);
+      doc.setFont("helvetica", "normal");
+      doc.text(payment.academic_year || "1st year", 410, 148);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Contact Mobile:", 320, 164);
+      doc.setFont("helvetica", "normal");
+      doc.text(studentData?.mobile1 || "N/A", 410, 164);
+
+      // Particulars Table
+      const tableHeaders = [["S.NO", "FEE DESCRIPTION / CATEGORY", "ACADEMIC YEAR", "PAYMENT STATUS", "AMOUNT PAID"]];
+      const tableRows = [[
+        "1",
+        payment.fee_type || payment.type || selectedFeeType || "Academic Fee",
+        payment.academic_year || "1st year",
+        String(payment.status || "APPROVED").toUpperCase(),
+        `INR ${Number(payment.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+      ]];
+
+      autoTable(doc, {
+        head: tableHeaders,
+        body: tableRows,
+        startY: 215,
+        margin: { left: 40, right: 40 },
+        theme: 'grid',
+        headStyles: {
+          fillColor: greenColor,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 40 },
+          1: { fontStyle: 'bold', fontSize: 9 },
+          2: { halign: 'center', fontSize: 9 },
+          3: { halign: 'center', fontStyle: 'bold', textColor: [21, 128, 61], fontSize: 9 },
+          4: { halign: 'right', fontStyle: 'bold', fontSize: 10 }
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [30, 41, 59]
+        }
+      });
+
+      const finalY = (doc.lastAutoTable?.previous?.finalY || 270) + 25;
+
+      // Summary Total Box
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(315, finalY, 240.28, 45, 6, 6, "F");
+      doc.setDrawColor(187, 247, 208);
+      doc.roundedRect(315, finalY, 240.28, 45, 6, 6, "D");
+
+      doc.setTextColor(21, 128, 61);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL AMOUNT PAID:", 330, finalY + 27);
+      doc.setFontSize(12);
+      doc.text(`Rs. ${Number(payment.amount || 0).toLocaleString('en-IN')}/-`, 540, finalY + 27, { align: "right" });
+
+      // Verification footer
+      const noticeY = finalY + 75;
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Note: This is a computer-generated fee payment receipt issued by Sri Sai Agricultural College Management.", 40, noticeY);
+      doc.text("No physical signature required. Verification ID: " + Math.random().toString(36).substring(2, 10).toUpperCase(), 40, noticeY + 12);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text("AUTHORISED SIGNATORY", 555, noticeY + 40, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("Sri Sai Agricultural College Accounts Dept.", 555, noticeY + 52, { align: "right" });
+
+      doc.save(`Fee_Receipt_${studentData?.roll_no || 'Student'}_${payment.fee_type || 'Fee'}.pdf`);
+    } catch(e) {
+      console.error("PDF generation error:", e);
+      alert("Could not generate PDF invoice: " + e.message);
+    }
   };
 
   const getFeeStats = (fee, type) => {
@@ -525,12 +667,8 @@ export default function StudentDashboard() {
                                           </div>
                                        </div>
                                        
-                                       <div className="flex items-center gap-3 w-full md:w-auto">
-                                          {history.is_official ? (
-                                             <span className="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-center flex-grow md:flex-grow-0">
-                                                ✓ Verified Account
-                                             </span>
-                                          ) : history.screenshot ? (
+                                       <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                          {history.screenshot && (
                                              <a 
                                                 href={getImageUrl(history.screenshot)} 
                                                 target="_blank" 
@@ -539,7 +677,14 @@ export default function StudentDashboard() {
                                              >
                                                 View Screenshot
                                              </a>
-                                          ) : null}
+                                          )}
+                                          <button
+                                             type="button"
+                                             onClick={() => downloadFeeInvoice({ ...history, fee_type: selectedFeeType }, student)}
+                                             className="px-5 py-2.5 bg-[#15803d] hover:bg-[#166534] text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2 shadow-md flex-grow md:flex-grow-0"
+                                          >
+                                             <Download size={14} /> Download Invoice
+                                          </button>
                                        </div>
                                     </div>
                                  );
@@ -1117,3 +1262,4 @@ function Plus(props) { return <svg {...props} width="24" height="24" viewBox="0 
 function Check(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>; }
 function BarChart3(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>; }
 function RefreshCw(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>; }
+function Download(props) { return <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>; }

@@ -23,7 +23,8 @@ import {
   FileSpreadsheet,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Download
 } from 'lucide-react';
 
 const API_URL = '/api';
@@ -112,6 +113,141 @@ export default function AdminDashboard() {
     }
     const filename = cleanPath.split('/').pop();
     return `/uploads/${filename}`;
+  };
+
+  const downloadFeeInvoice = (payment, studentData) => {
+    try {
+      const doc = new jsPDF("p", "pt", "a4");
+      const greenColor = [21, 128, 61];
+
+      doc.setFillColor(...greenColor);
+      doc.rect(0, 0, 595.28, 90, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("SRI SAI INSTITUTE OF AGRICULTURAL SCIENCES", 40, 40);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("OFFICIAL FEE PAYMENT RECEIPT & INVOICE", 40, 58);
+      doc.text("Sri Sai Agricultural College, Andhra Pradesh", 40, 72);
+
+      const receiptNo = `INV-${new Date(payment.created_at || Date.now()).getFullYear()}-${String(payment.id || Math.floor(Math.random() * 90000 + 10000)).padStart(6, '0')}`;
+      const paidDate = payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-GB');
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text(`RECEIPT NO: ${receiptNo}`, 555, 45, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.text(`DATE: ${paidDate}`, 555, 60, { align: "right" });
+      doc.text(`STATUS: ${String(payment.status || 'APPROVED').toUpperCase()}`, 555, 75, { align: "right" });
+
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "F");
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "D");
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("STUDENT DETAILS", 55, 130);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Student Name:", 55, 148);
+      doc.setFont("helvetica", "normal");
+      doc.text(studentData?.student_name || "N/A", 140, 148);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Roll / ID No:", 55, 164);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(studentData?.roll_no || studentData?.id || "N/A"), 140, 164);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Course & Branch:", 55, 180);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${studentData?.course_applied || 'B.Sc. Agriculture'} (${studentData?.branch || 'General'})`, 140, 180);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Academic Year:", 320, 148);
+      doc.setFont("helvetica", "normal");
+      doc.text(payment.academic_year || "1st year", 410, 148);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Contact Mobile:", 320, 164);
+      doc.setFont("helvetica", "normal");
+      doc.text(studentData?.mobile1 || "N/A", 410, 164);
+
+      const tableHeaders = [["S.NO", "FEE DESCRIPTION / CATEGORY", "ACADEMIC YEAR", "PAYMENT STATUS", "AMOUNT PAID"]];
+      const tableRows = [[
+        "1",
+        payment.fee_type || payment.type || "Academic Fee",
+        payment.academic_year || "1st year",
+        String(payment.status || "APPROVED").toUpperCase(),
+        `INR ${Number(payment.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+      ]];
+
+      autoTable(doc, {
+        head: tableHeaders,
+        body: tableRows,
+        startY: 215,
+        margin: { left: 40, right: 40 },
+        theme: 'grid',
+        headStyles: {
+          fillColor: greenColor,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 40 },
+          1: { fontStyle: 'bold', fontSize: 9 },
+          2: { halign: 'center', fontSize: 9 },
+          3: { halign: 'center', fontStyle: 'bold', textColor: [21, 128, 61], fontSize: 9 },
+          4: { halign: 'right', fontStyle: 'bold', fontSize: 10 }
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [30, 41, 59]
+        }
+      });
+
+      const finalY = (doc.lastAutoTable?.previous?.finalY || 270) + 25;
+
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(315, finalY, 240.28, 45, 6, 6, "F");
+      doc.setDrawColor(187, 247, 208);
+      doc.roundedRect(315, finalY, 240.28, 45, 6, 6, "D");
+
+      doc.setTextColor(21, 128, 61);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL AMOUNT PAID:", 330, finalY + 27);
+      doc.setFontSize(12);
+      doc.text(`Rs. ${Number(payment.amount || 0).toLocaleString('en-IN')}/-`, 540, finalY + 27, { align: "right" });
+
+      const noticeY = finalY + 75;
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Note: This is a computer-generated fee payment receipt issued by Sri Sai Agricultural College Management.", 40, noticeY);
+      doc.text("No physical signature required. Verification ID: " + Math.random().toString(36).substring(2, 10).toUpperCase(), 40, noticeY + 12);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text("AUTHORISED SIGNATORY", 555, noticeY + 40, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("Sri Sai Agricultural College Accounts Dept.", 555, noticeY + 52, { align: "right" });
+
+      doc.save(`Fee_Receipt_${studentData?.roll_no || 'Student'}_${payment.fee_type || 'Fee'}.pdf`);
+    } catch(e) {
+      console.error("PDF generation error:", e);
+      alert("Could not generate PDF invoice: " + e.message);
+    }
   };
 
   const parseDateForInput = (dob) => {
@@ -1702,20 +1838,29 @@ export default function AdminDashboard() {
 
                             return (
                               <div key={year} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
+<div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
                                   <div className="flex items-center gap-3">
                                     <span className="font-black text-ink text-sm uppercase tracking-widest bg-ink/5 px-4 py-2 rounded-xl">{year}</span>
                                     <span className="text-xs font-bold text-gray-500">Total Fee: <strong className="text-ink">₹{totalAllocated.toLocaleString()}</strong></span>
                                     <span className="text-xs font-bold text-green-600">Paid: <strong>₹{totalPaid.toLocaleString()}</strong></span>
                                   </div>
-                                  <div>
-                                    {totalAllocated > 0 && totalDue === 0 ? (
-                                      <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-black rounded-xl border border-green-200">✓ Fully Paid</span>
-                                    ) : totalDue > 0 ? (
-                                      <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-200">Overall Due: ₹{totalDue.toLocaleString()}</span>
-                                    ) : (
-                                      <span className="px-3 py-1.5 bg-gray-50 text-gray-400 text-xs font-black rounded-xl">No Fees Allocated</span>
-                                    )}
+                                  <div className="flex items-center gap-2">
+                                     {totalPaid > 0 && (
+                                       <button
+                                         type="button"
+                                         onClick={() => downloadFeeInvoice({ amount: totalPaid, academic_year: year, fee_type: 'Total Paid Fees' }, selectedStudent)}
+                                         className="px-3 py-1.5 bg-[#15803d] hover:bg-[#166534] text-white text-xs font-black rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
+                                       >
+                                         <Download size={14} /> Download Receipt
+                                       </button>
+                                     )}
+                                     {totalAllocated > 0 && totalDue === 0 ? (
+                                       <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-black rounded-xl border border-green-200">✓ Fully Paid</span>
+                                     ) : totalDue > 0 ? (
+                                       <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-200">Overall Due: ₹{totalDue.toLocaleString()}</span>
+                                     ) : (
+                                       <span className="px-3 py-1.5 bg-gray-50 text-gray-400 text-xs font-black rounded-xl">No Fees Allocated</span>
+                                     )}
                                   </div>
                                 </div>
 
