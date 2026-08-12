@@ -1589,52 +1589,48 @@ export default function AdminDashboard() {
                            </div>
                         </div>
 
-                        <div className="overflow-x-auto border border-gray-100 rounded-2xl shadow-sm">
+                         <div className="overflow-x-auto border border-gray-100 rounded-2xl">
                            <table className="w-full border-collapse bg-white">
-                              <thead className="bg-[#15803d] text-white">
-                                 <tr>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Academic Year</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Total Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Committed Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Admission Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Practical Fee</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel</th>
-                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
-                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-50">
-                                 {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
-                                    const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                                       academic_year: year, total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0, paid_amount: 0
-                                    };
-                                    const updateFee = (updates) => {
-                                       const newFees = [...studentFees];
-                                       const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
-                                       if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
-                                       else newFees.push({ ...fee, ...updates });
-                                       setStudentFees(newFees);
-                                    };
-                                    return (
-                                       <tr key={year} className="hover:bg-gray-50/50">
-                                          <td className="p-4 font-black text-ink text-xs uppercase tracking-wider">{year}</td>
-                                          {['total_fee', 'committed_fee', 'admission_fee', 'practical_fee', 'hostel_fee', 'travelling_fee'].map(key => (
-                                             <td key={key} className="p-2">
-                                                <input 
-                                                   type="number" 
-                                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                   value={fee[key] === 0 || fee[key] === '0' || !fee[key] ? '' : fee[key]}
-                                                   placeholder="0"
-                                                   onFocus={(e) => e.target.select()}
-                                                   onChange={(e) => updateFee({ [key]: e.target.value })}
-                                                />
-                                             </td>
-                                          ))}
-                                       </tr>
-                                    );
-                                 })}
-                              </tbody>
+                             <thead className="bg-ink text-white">
+                               <tr>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Academic Year</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Committed Fee</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Admission Fee</th>
+                               </tr>
+                             </thead>
+                             <tbody className="divide-y divide-gray-50">
+                               {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                                 const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
+                                   academic_year: year, committed_fee: 0, admission_fee: 0
+                                 };
+                                 const updateFee = (updates) => {
+                                   const newFees = [...studentFees];
+                                   const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
+                                   if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
+                                   else newFees.push({ ...fee, ...updates });
+                                   setStudentFees(newFees);
+                                 };
+                                 return (
+                                   <tr key={year}>
+                                     <td className="p-4 font-black text-ink text-xs uppercase tracking-wider">{year}</td>
+                                     {['committed_fee', 'admission_fee'].map(key => (
+                                       <td key={key} className="p-2">
+                                         <input 
+                                           type="number" 
+                                           className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:border-blue outline-none transition-all font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                           value={fee[key] === 0 || fee[key] === '0' || !fee[key] ? '' : fee[key]}
+                                           placeholder="0"
+                                           onFocus={(e) => e.target.select()}
+                                           onChange={(e) => updateFee({ [key]: e.target.value })}
+                                         />
+                                       </td>
+                                     ))}
+                                   </tr>
+                                 );
+                               })}
+                             </tbody>
                            </table>
-                        </div>
+                         </div>
                      </div>
 
                      {/* Itemized Partial Paid & Due Entry */}
@@ -1722,9 +1718,14 @@ export default function AdminDashboard() {
                                         <div className="space-y-2">
                                           <div>
                                             <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
-                                            <div className="w-full px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl font-bold text-ink text-xs">
-                                              {Number(fee[cat.keyTotal] || 0).toLocaleString() || '0'}
-                                            </div>
+                                            <input
+                                              type="number"
+                                              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                              value={fee[cat.keyTotal] === 0 || fee[cat.keyTotal] === '0' || !fee[cat.keyTotal] ? '' : fee[cat.keyTotal]}
+                                              placeholder="0"
+                                              onFocus={(e) => e.target.select()}
+                                              onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
+                                            />
                                           </div>
                                           <div>
                                             <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
