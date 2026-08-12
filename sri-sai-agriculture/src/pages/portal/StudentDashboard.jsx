@@ -44,22 +44,19 @@ export default function StudentDashboard() {
       const fYear = (fee.academic_year || '').toLowerCase().trim();
 
       const typeMatches = pType === normType || 
-        (normType.includes('academic') && pType.includes('college')) ||
+        (normType.includes('academic') && (pType.includes('academic') || pType.includes('college'))) ||
+        (normType.includes('college') && (pType.includes('academic') || pType.includes('college'))) ||
         (normType.includes('travelling') && pType.includes('travelling')) ||
         (normType.includes('exam') && pType.includes('exam'));
 
       return typeMatches && pYear === fYear;
     });
 
-    const approvedPaid = matchedProofs
-      .filter(p => (p.status || '').toLowerCase() === 'approved')
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-
     const pendingPaid = matchedProofs
       .filter(p => (p.status || '').toLowerCase() === 'pending')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const paid = Math.max(directPaid, approvedPaid);
+    const paid = directPaid;
     const balance = Math.max(0, allocated - paid);
 
     return { allocated, paid, pendingPaid, balance };
@@ -69,10 +66,14 @@ export default function StudentDashboard() {
     const fetchProfile = async () => {
       try {
         const res = await axios.get(`${API_URL}/students/profile`, { withCredentials: true });
-        setStudent(res.data);
+        if (res.data) {
+          setStudent(res.data);
+        } else {
+          navigate("/portal/login");
+        }
       } catch (err) {
-        console.error("Fetch failed", err);
-        // Do not set mock data here anymore
+        console.error("Fetch profile failed", err);
+        navigate("/portal/login");
       }
     };
     fetchProfile();
