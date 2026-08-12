@@ -609,13 +609,19 @@ router.post("/admin/import", authenticate, excelUpload.single("file"), async (re
 
     await connection.beginTransaction();
 
-    const [importResult] = await connection.query(
-      "INSERT INTO excel_imports (filename) VALUES (?)",
-      [req.file.originalname]
-    );
-    const excelImportId = importResult.insertId;
+    let excelImportId = null;
+    try {
+      const [importResult] = await connection.query(
+        "INSERT INTO excel_imports (filename) VALUES (?)",
+        [req.file ? req.file.originalname : "Uploaded_Sheet.xlsx"]
+      );
+      excelImportId = importResult.insertId;
+    } catch (e) {
+      console.error("excel_imports insert note:", e.message);
+    }
 
     for (const row of rawRows) {
+      try {
       const normalizedRow = {};
       Object.keys(row).forEach(k => {
         normalizedRow[normalizeKey(k)] = row[k];
@@ -789,6 +795,14 @@ router.post("/admin/import", authenticate, excelUpload.single("file"), async (re
       }
 
       importedCount++;
+      } catch (rowErr) {
+        console.error("Row import error:", rowErr.message);
+        skippedCount++;
+        skippedStudents.push({
+          name: row.student_name || row.name || ("Row " + (rawRows.indexOf(row) + 2)),
+          reason: rowErr.message
+        });
+      }
     }
 
     if (importedCount === 0) {
