@@ -235,6 +235,15 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const fetchStudents = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/students/admin/list`);
+      setStudents(res.data);
+    } catch (err) {
+      console.error("Fetch students failed");
+    }
+  }, []);
+
   const handleOpenStudentAccount = async (proof) => {
     try {
       setLoading(true);
@@ -300,14 +309,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isAdmin) {
       fetchPaymentProofs();
-      const fetchStudents = async () => {
-        try {
-          const res = await axios.get(`${API_URL}/students/admin/list`);
-          setStudents(res.data);
-        } catch (err) {
-          console.error("Fetch students failed");
-        }
-      };
 
       if (activeTab === "students") {
         fetchStudents();
@@ -321,7 +322,7 @@ export default function AdminDashboard() {
         fetchData();
       }
     }
-  }, [isAdmin, activeTab, fetchData, refresh, fetchExcelImports, fetchPaymentProofs]);
+  }, [isAdmin, activeTab, fetchData, refresh, fetchExcelImports, fetchPaymentProofs, fetchStudents]);
 
   useEffect(() => {
     const fetchFees = async () => {
