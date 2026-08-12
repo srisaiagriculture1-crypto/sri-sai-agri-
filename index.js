@@ -25,8 +25,31 @@ try {
 
   app.use(cors());
   app.use(express.json());
-  app.use(cookieParser());
-  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+  const uploadsDir = path.resolve(__dirname, "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Explicit route handler for serving upload files dynamically
+  app.get("/uploads/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const possiblePaths = [
+      path.resolve(__dirname, "uploads", filename),
+      path.resolve(process.cwd(), "uploads", filename),
+      path.resolve(__dirname, "sri-sai-agriculture", "uploads", filename),
+      path.resolve(process.cwd(), "sri-sai-agriculture", "uploads", filename)
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+        return res.sendFile(p);
+      }
+    }
+    res.status(404).send("File not found");
+  });
+
+  app.use("/uploads", express.static(uploadsDir));
+  app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
   // Import Routes
   app.use("/api/students", require("./routes/studentRoutes"));

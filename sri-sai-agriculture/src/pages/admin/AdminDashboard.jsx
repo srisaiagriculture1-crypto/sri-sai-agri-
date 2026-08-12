@@ -105,10 +105,8 @@ export default function AdminDashboard() {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('data:')) return path;
     const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
-    if (!cleanPath.toLowerCase().startsWith('uploads/')) {
-      return `/uploads/${cleanPath}`;
-    }
-    return `/${cleanPath}`;
+    const filename = cleanPath.split('/').pop();
+    return `/uploads/${filename}`;
   };
 
   const parseDateForInput = (dob) => {
