@@ -369,12 +369,7 @@ export default function AdminDashboard() {
     fetchFees();
   }, [selectedStudent]);
 
-  useEffect(() => {
-    setViewMode('list');
-    setEditingId(null);
-    setFormData({});
-    setFile(null);
-  }, [activeTab]);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -770,7 +765,13 @@ export default function AdminDashboard() {
             return tabs.map(tab => (
               <button 
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setViewMode('list');
+                  setEditingId(null);
+                  setFormData({});
+                  setFile(null);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 group ${activeTab === tab.id ? 'bg-blue text-white shadow-lg shadow-blue/20' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
               >
                 <tab.icon size={18} className={`${activeTab === tab.id ? 'text-white' : 'text-white/40 group-hover:text-white'} transition-colors`} />
