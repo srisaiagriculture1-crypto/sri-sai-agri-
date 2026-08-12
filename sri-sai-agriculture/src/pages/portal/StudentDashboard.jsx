@@ -584,89 +584,57 @@ export default function StudentDashboard() {
                   </InfoSection>
                </div>
 
-               {/* Fee Allocation & Breakdown in Profile */}
+               {/* Fee Breakdown Structure in Profile */}
                {student.student_fees && student.student_fees.length > 0 && (
                   <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm p-6 space-y-6">
                      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 bg-blue/10 rounded-xl flex items-center justify-center text-blue">
-                              <Wallet size={20} />
+                           <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                              <RefreshCw size={20} />
                            </div>
                            <div>
-                              <h3 className="font-black text-sm uppercase tracking-wider text-ink">Fee Allocation &amp; Payment Status</h3>
-                              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Itemized Breakdown per Category &amp; Year</p>
+                              <h3 className="font-black text-sm uppercase tracking-wider text-ink">FEE BREAKDOWN</h3>
+                              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Yearly Fee Structure Specified by College Management</p>
                            </div>
                         </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase border border-green-200">Verified Account</span>
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase border border-green-200">Verified Record</span>
                      </div>
 
-                     <div className="space-y-6">
-                       {student.student_fees.map((fee, idx) => {
-                         const catList = [
-                           { title: 'College Fee', typeKey: 'College Fee' },
-                           { title: 'Hostel Fee', typeKey: 'Hostel Fee' },
-                           { title: 'Exam Fee', typeKey: 'Exam Fee' },
-                           { title: 'Practical Fee', typeKey: 'Practical Fee' },
-                           { title: 'Travelling Expenses', typeKey: 'Travelling Expenses' },
-                         ];
-
-                         const stats = catList.map(c => {
-                           const s = getFeeStats(fee, c.typeKey);
-                           return { title: c.title, ...s };
-                         });
-
-                         const yearTotalAllocated = stats.reduce((sum, item) => sum + item.allocated, 0);
-                         const yearTotalPaid = stats.reduce((sum, item) => sum + item.paid, 0);
-                         const yearTotalDue = Math.max(0, yearTotalAllocated - yearTotalPaid);
-
-                         return (
-                           <div key={idx} className="bg-gray-50/60 rounded-2xl p-5 border border-gray-100">
-                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-200/60">
-                               <div className="flex items-center gap-3">
-                                 <span className="px-3 py-1 bg-ink text-white font-black text-xs uppercase rounded-lg tracking-wider">{fee.academic_year}</span>
-                                 <span className="text-xs font-bold text-gray-500">Allocated: <strong className="text-ink">₹{yearTotalAllocated.toLocaleString()}</strong></span>
-                                 <span className="text-xs font-bold text-green-600">Paid: <strong>₹{yearTotalPaid.toLocaleString()}</strong></span>
-                               </div>
-                               <div>
-                                 {yearTotalAllocated > 0 && yearTotalDue === 0 ? (
-                                   <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase border border-green-200">✓ Fully Clear</span>
-                                 ) : yearTotalDue > 0 ? (
-                                   <span className="px-3 py-1 bg-orange-100 text-orange-700 text-[10px] font-black rounded-full uppercase border border-orange-200">Due: ₹{yearTotalDue.toLocaleString()}</span>
-                                 ) : (
-                                   <span className="px-3 py-1 bg-gray-100 text-gray-400 text-[10px] font-black rounded-full uppercase">Not Set</span>
-                                 )}
-                               </div>
-                             </div>
-
-                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                               {stats.map(item => (
-                                 <div key={item.title} className="bg-white p-3 rounded-xl border border-gray-100 shadow-2xs flex flex-col justify-between gap-2">
-                                   <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{item.title}</span>
-                                   <div>
-                                     <div className="flex justify-between items-baseline">
-                                       <span className="text-[10px] text-gray-400 font-bold">Total:</span>
-                                       <span className="text-xs font-black text-ink">₹{item.allocated.toLocaleString()}</span>
-                                     </div>
-                                     <div className="flex justify-between items-baseline">
-                                       <span className="text-[10px] text-green-600 font-bold">Paid:</span>
-                                       <span className="text-xs font-black text-green-600">₹{item.paid.toLocaleString()}</span>
-                                     </div>
-                                   </div>
-                                   <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-[10px]">
-                                     <span className="font-bold text-gray-400">Due:</span>
-                                     <span className={`font-black ${item.balance > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                                       ₹{item.balance.toLocaleString()}
-                                     </span>
-                                   </div>
-                                 </div>
-                               ))}
-                             </div>
-                           </div>
-                         );
-                       })}
+                     <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-xs">
+                        <table className="w-full text-xs text-left border-collapse bg-white">
+                           <thead className="bg-[#15803d] text-white">
+                              <tr>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Academic Year</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Total Fee</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Committed Fee</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Admission Fee</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Practical Fee</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Hostel</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Travelling Expenses</th>
+                              </tr>
+                           </thead>
+                           <tbody className="divide-y divide-gray-100">
+                              {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                                 const fee = student.student_fees.find(f => (f.academic_year || '').toLowerCase() === year.toLowerCase()) || {
+                                    academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                 };
+                                 return (
+                                    <tr key={year} className="hover:bg-gray-50/50">
+                                       <td className="p-4 font-black text-ink uppercase text-xs tracking-wider">{year}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_total_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.committed_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.admission_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_practical_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_hostel_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_travelling_fee || 0).toLocaleString()}</td>
+                                    </tr>
+                                 );
+                              })}
+                           </tbody>
+                        </table>
                      </div>
                   </div>
-                )}
+               )}
             </div>
           )}
 
