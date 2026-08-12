@@ -29,7 +29,7 @@ const API_URL = '/api';
 
 export default function AdminDashboard() {
   const excelInputRef = useRef(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => !!localStorage.getItem("adminToken"));
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -157,17 +157,25 @@ export default function AdminDashboard() {
   }, []);
 
   const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
     try {
-      const token = localStorage.getItem("adminToken");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = { Authorization: `Bearer ${token}` };
       const res = await axios.get(`${API_URL}/admin/auth`, { headers, withCredentials: true });
-      if (res.data.authenticated) {
+      if (res.data && res.data.authenticated) {
         setIsAdmin(true);
       } else {
+        localStorage.removeItem("adminToken");
         setIsAdmin(false);
       }
     } catch (err) {
-      setIsAdmin(false);
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem("adminToken");
+        setIsAdmin(false);
+      }
     }
   }, []);
 
