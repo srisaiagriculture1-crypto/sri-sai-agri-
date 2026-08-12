@@ -638,7 +638,9 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-6 font-sora">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-10 border border-gray-100">
           <div className="text-center mb-8">
-             <div className="w-16 h-16 bg-blue rounded-2xl mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue/20">S</div>
+             <div className="w-20 h-20 bg-white rounded-2xl p-1.5 mx-auto mb-4 flex items-center justify-center shadow-lg border border-gray-100">
+                <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
+             </div>
              <h2 className="text-2xl font-bold text-ink">Super Admin Panel</h2>
              <p className="text-gray-400 text-sm mt-1">
                {showForgotPassword ? 'Enter your username or email to reset password' : 'Please enter your credentials to continue'}
@@ -748,7 +750,9 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#f8fafc] flex font-sora">
       <aside className="w-72 bg-ink text-white flex flex-col sticky top-0 h-screen shadow-2xl z-20">
         <div className="p-8 border-b border-white/10 flex items-center gap-4">
-          <div className="w-10 h-10 bg-white text-ink rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">S</div>
+          <div className="w-11 h-11 bg-white rounded-xl p-1 flex items-center justify-center shadow-lg shrink-0">
+             <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
+          </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight">Super Admin Panel</h1>
             <p className="text-[10px] text-white/50 uppercase font-black tracking-widest">Control Center</p>

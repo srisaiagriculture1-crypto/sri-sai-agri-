@@ -190,8 +190,8 @@ export default function StaffDashboard() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 px-8 py-5 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
-           <div className="h-11 w-11 bg-blue rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue/20">
-              <Calendar size={20} />
+           <div className="h-11 w-11 bg-white rounded-2xl p-1 flex items-center justify-center border border-gray-100 shadow-md shrink-0">
+              <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
            </div>
            <div>
               <h1 className="text-xl font-black text-ink uppercase tracking-tight">Attendance Register</h1>

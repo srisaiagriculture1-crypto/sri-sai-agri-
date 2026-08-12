@@ -28,8 +28,8 @@ export default function StaffLogin() {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6">
       <Link to="/" className="mb-10 group">
          <div className="flex items-center gap-4 bg-white p-4 rounded-[2rem] shadow-xl shadow-blue/5 border border-gray-100 pr-8">
-            <div className="h-12 w-12 bg-blue rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue/20">
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <div className="h-12 w-12 bg-white rounded-2xl p-1 flex items-center justify-center border border-gray-100 shadow-md">
+               <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col">
                <span className="font-black text-ink text-sm uppercase tracking-tight leading-tight">Sri Sai Institute</span>
@@ -40,8 +40,8 @@ export default function StaffLogin() {
 
       <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl shadow-blue/5 border border-gray-100 p-10 space-y-8 animate-fadeIn">
         <div className="text-center">
-          <div className="h-20 w-20 bg-sky text-blue rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue/5">
-             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+          <div className="w-20 h-20 bg-white rounded-2xl p-1.5 mx-auto mb-6 flex items-center justify-center shadow-lg border border-gray-100">
+             <img src="/logo.png" alt="Sri Sai Agricultural College Logo" className="h-full w-full object-contain" />
           </div>
           <h2 className="text-3xl font-black text-ink uppercase tracking-tight">Staff Portal</h2>
           <p className="text-muted font-bold text-[10px] uppercase tracking-[0.2em] mt-2">Faculty & Administration Access</p>
