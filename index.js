@@ -37,12 +37,15 @@ try {
   // Explicit route handler for serving upload files dynamically across versioned deployments & persistent shared_uploads
   app.get("/uploads/:filename", (req, res) => {
     const filename = path.basename(req.params.filename);
+
+    // 1. Direct candidate paths
     const possiblePaths = [
       path.resolve(__dirname, "uploads", filename),
       path.resolve(process.cwd(), "uploads", filename),
       path.resolve(__dirname, "..", "uploads", filename),
       path.resolve(__dirname, "..", "shared_uploads", filename),
       path.resolve(__dirname, "..", "..", "shared_uploads", filename),
+      path.resolve(__dirname, "..", "..", "uploads", filename),
       path.resolve(__dirname, "sri-sai-agriculture", "uploads", filename),
       path.resolve(process.cwd(), "sri-sai-agriculture", "uploads", filename)
     ];
@@ -53,35 +56,49 @@ try {
       }
     }
 
-    // Dynamic search across Hostinger hbuilds version folders and domain persistent shared_uploads
+    // 2. Walk up parent directories searching for uploads/filename or shared_uploads/filename
+    let curr = __dirname;
+    for (let i = 0; i < 6; i++) {
+      const p1 = path.join(curr, "uploads", filename);
+      if (fs.existsSync(p1) && fs.statSync(p1).isFile()) return res.sendFile(p1);
+
+      const p2 = path.join(curr, "shared_uploads", filename);
+      if (fs.existsSync(p2) && fs.statSync(p2).isFile()) return res.sendFile(p2);
+
+      const parent = path.dirname(curr);
+      if (parent === curr) break;
+      curr = parent;
+    }
+
+    // 3. Search across all subdirectories of domain root / hbuilds versions
     try {
       const normDir = __dirname.replace(/\\/g, '/');
-      const parts = normDir.split('/hbuilds/versions/');
-      if (parts.length > 1) {
-        const domainRoot = parts[0];
-        const sharedDir = path.join(domainRoot, 'shared_uploads');
-        const sharedFile = path.join(sharedDir, filename);
-        if (fs.existsSync(sharedFile) && fs.statSync(sharedFile).isFile()) {
-          return res.sendFile(sharedFile);
-        }
-
-        const versionsDir = path.join(domainRoot, 'hbuilds', 'versions');
-        if (fs.existsSync(versionsDir)) {
-          const versions = fs.readdirSync(versionsDir);
-          for (const ver of versions) {
-            const verUpload1 = path.join(versionsDir, ver, 'nodejs', 'uploads', filename);
-            if (fs.existsSync(verUpload1) && fs.statSync(verUpload1).isFile()) {
-              return res.sendFile(verUpload1);
+      const domainRoot = (normDir.split('/hbuilds/')[0] || normDir.split('/public_html')[0] || normDir).trim();
+      
+      const searchInDir = (dir, depth = 0) => {
+        if (depth > 5 || !fs.existsSync(dir)) return null;
+        try {
+          const items = fs.readdirSync(dir, { withFileTypes: true });
+          for (const item of items) {
+            const fullPath = path.join(dir, item.name);
+            if (item.isFile() && item.name === filename) {
+              return fullPath;
             }
-            const verUpload2 = path.join(versionsDir, ver, 'uploads', filename);
-            if (fs.existsSync(verUpload2) && fs.statSync(verUpload2).isFile()) {
-              return res.sendFile(verUpload2);
+            if (item.isDirectory() && (item.name === 'uploads' || item.name === 'shared_uploads' || item.name === 'hbuilds' || item.name === 'versions' || item.name === 'nodejs')) {
+              const found = searchInDir(fullPath, depth + 1);
+              if (found) return found;
             }
           }
-        }
+        } catch(e) {}
+        return null;
+      };
+
+      const foundPath = searchInDir(domainRoot);
+      if (foundPath && fs.existsSync(foundPath)) {
+        return res.sendFile(foundPath);
       }
     } catch(e) {
-      console.error("Hostinger version search note:", e.message);
+      console.error("Deep search error note:", e.message);
     }
 
     res.status(404).send("File not found");
