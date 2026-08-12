@@ -591,9 +591,11 @@ export default function AdminDashboard() {
       }
       alert(alertMsg);
       setRefresh(prev => prev + 1);
+      fetchExcelImports();
+      fetchStudents();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to import Excel sheet.");
+      alert("Import failed: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
       e.target.value = "";

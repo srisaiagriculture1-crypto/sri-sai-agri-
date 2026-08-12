@@ -673,7 +673,16 @@ router.post("/admin/import", authenticate, excelUpload.single("file"), async (re
 
       const dobKey = findValue(rowKeys, ["dob", "date_of_birth", "dateofbirth", "birthdate"], ["dob", "birth", "date_of_birth"]);
       const dobVal = dobKey ? normalizedRow[dobKey] : "";
-      const dob = dobVal ? new Date(dobVal) : null;
+      let dob = null;
+      if (dobVal) {
+        if (typeof dobVal === 'number') {
+          const dateObj = new Date(Math.round((dobVal - 25569) * 86400 * 1000));
+          if (!isNaN(dateObj.getTime())) dob = dateObj;
+        } else {
+          const parsed = new Date(dobVal);
+          if (!isNaN(parsed.getTime())) dob = parsed;
+        }
+      }
 
       const genderKey = findValue(rowKeys, ["gender", "sex"], ["gender", "sex"]);
       const gender = genderKey ? normalizedRow[genderKey].toString().trim() : "";
