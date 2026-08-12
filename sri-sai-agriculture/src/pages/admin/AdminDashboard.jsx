@@ -74,6 +74,12 @@ export default function AdminDashboard() {
   const [filterAcademicYear, setFilterAcademicYear] = useState('all');
   const [filterYearLevel, setFilterYearLevel] = useState('all');
   const [staffList, setStaffList] = useState([]);
+  
+  // Fee Management Notifications state
+  const [paymentProofs, setPaymentProofs] = useState([]);
+  const [proofFilter, setProofFilter] = useState('Pending');
+  const [previewProof, setPreviewProof] = useState(null);
+  const [feeNoticeBanner, setFeeNoticeBanner] = useState(null);
 
   const calculateAcademicYear = (enrolledYearStr) => {
     if (!enrolledYearStr) return '1st Year';
@@ -118,6 +124,7 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: 'students', label: 'Student Accounts', icon: Users },
+    { id: 'feeNotifications', label: 'Fee Notifications', icon: Bell },
     { id: 'imports', label: 'Excel Imports', icon: FileSpreadsheet },
     { id: 'staff', label: 'Staff Accounts', icon: Users },
     { id: 'hero', label: 'Hero Slider Management', icon: LayoutDashboard },
@@ -218,8 +225,69 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const fetchPaymentProofs = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/student-fees/admin/proofs`, { withCredentials: true });
+      setPaymentProofs(res.data || []);
+    } catch (err) {
+      console.error("Fetch payment proofs failed", err);
+    }
+  }, []);
+
+  const handleApproveProof = async (proof) => {
+    try {
+      setLoading(true);
+      await axios.put(`${API_URL}/student-fees/proofs/${proof.id}/status`, { status: 'Approved' }, { withCredentials: true });
+      
+      const studentsRes = await axios.get(`${API_URL}/students/admin/list`);
+      setStudents(studentsRes.data);
+      await fetchPaymentProofs();
+
+      const targetStudent = studentsRes.data.find(s => s.id === proof.student_id);
+      if (targetStudent) {
+        setSelectedStudent(targetStudent);
+        let mapped = { ...targetStudent };
+        if (mapped.dob) mapped.dob = parseDateForInput(mapped.dob);
+        setFormData(mapped);
+
+        const feeRes = await axios.get(`${API_URL}/student-fees/${targetStudent.id}`);
+        setStudentFees(feeRes.data);
+        setActiveTab("students");
+        setViewMode("student-manage");
+        setFeeNoticeBanner({
+          studentName: targetStudent.student_name,
+          feeType: proof.fee_type,
+          amount: proof.amount,
+          year: proof.academic_year,
+          screenshot: proof.screenshot
+        });
+      } else {
+        alert("Payment proof approved successfully!");
+      }
+    } catch (err) {
+      alert("Failed to approve payment proof: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectProof = async (proofId) => {
+    if (!window.confirm("Reject this payment proof submission?")) return;
+    try {
+      setLoading(true);
+      await axios.put(`${API_URL}/student-fees/proofs/${proofId}/status`, { status: 'Rejected' }, { withCredentials: true });
+      alert("Payment proof rejected.");
+      fetchPaymentProofs();
+    } catch (err) {
+      alert("Failed to reject proof: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
+      fetchPaymentProofs();
       const fetchStudents = async () => {
         try {
           const res = await axios.get(`${API_URL}/students/admin/list`);
@@ -231,6 +299,8 @@ export default function AdminDashboard() {
 
       if (activeTab === "students") {
         fetchStudents();
+      } else if (activeTab === "feeNotifications") {
+        fetchPaymentProofs();
       } else if (activeTab === "imports") {
         fetchExcelImports();
       } else if (activeTab === "staff") {
@@ -239,7 +309,7 @@ export default function AdminDashboard() {
         fetchData();
       }
     }
-  }, [isAdmin, activeTab, fetchData, refresh, fetchExcelImports]);
+  }, [isAdmin, activeTab, fetchData, refresh, fetchExcelImports, fetchPaymentProofs]);
 
   useEffect(() => {
     const fetchFees = async () => {
@@ -601,17 +671,25 @@ export default function AdminDashboard() {
 
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto scrollbar-hide">
           <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-4 ml-2">Navigation</p>
-          {tabs.map(tab => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 group ${activeTab === tab.id ? 'bg-blue text-white shadow-lg shadow-blue/20' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
-            >
-              <tab.icon size={18} className={`${activeTab === tab.id ? 'text-white' : 'text-white/40 group-hover:text-white'} transition-colors`} />
-              <span className="flex-1 text-left">{tab.label}</span>
-              {activeTab === tab.id && <ChevronRight size={14} className="opacity-50" />}
-            </button>
-          ))}
+          {(() => {
+            const pendingCount = paymentProofs.filter(p => (p.status || '').toLowerCase() === 'pending').length;
+            return tabs.map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 group ${activeTab === tab.id ? 'bg-blue text-white shadow-lg shadow-blue/20' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+              >
+                <tab.icon size={18} className={`${activeTab === tab.id ? 'text-white' : 'text-white/40 group-hover:text-white'} transition-colors`} />
+                <span className="flex-1 text-left">{tab.label}</span>
+                {tab.id === 'feeNotifications' && pendingCount > 0 && (
+                  <span className="px-2.5 py-0.5 text-[10px] font-black bg-red-500 text-white rounded-full animate-bounce shadow-md">
+                    {pendingCount}
+                  </span>
+                )}
+                {activeTab === tab.id && <ChevronRight size={14} className="opacity-50" />}
+              </button>
+            ));
+          })()}
         </nav>
 
         <div className="p-6 border-t border-white/10">
@@ -1233,6 +1311,33 @@ export default function AdminDashboard() {
                       <p className="text-[10px] font-black text-blue uppercase tracking-widest">Active Session: {selectedStudent?.student_name}</p>
                    </div>
                 </div>
+
+                {feeNoticeBanner && (
+                  <div className="mb-8 p-6 bg-green-50 border-2 border-green-500 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn shadow-lg shadow-green-500/10">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 bg-green-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">✓</div>
+                       <div>
+                          <h4 className="font-black text-ink text-base">Payment Screenshot Approved for {feeNoticeBanner.studentName}</h4>
+                          <p className="text-xs font-bold text-green-700 mt-0.5">
+                             Category: <span className="underline">{feeNoticeBanner.feeType}</span> | Academic Year: <span className="underline">{feeNoticeBanner.year}</span> | Amount Paid: <span className="underline">₹{Number(feeNoticeBanner.amount || 0).toLocaleString()}</span>
+                          </p>
+                          <p className="text-[10px] text-muted font-bold uppercase tracking-wider mt-1">
+                             Payment proof verified. Review fee breakdown below and click "SYNC & CREATE ENTRY" to save student details.
+                          </p>
+                       </div>
+                    </div>
+                    {feeNoticeBanner.screenshot && (
+                       <a 
+                         href={getImageUrl(feeNoticeBanner.screenshot)} 
+                         target="_blank" 
+                         rel="noreferrer"
+                         className="px-5 py-2.5 bg-green-600 text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-green-700 transition-all shrink-0 shadow-md flex items-center gap-2"
+                       >
+                          <Eye size={16} /> View Screenshot ↗
+                       </a>
+                    )}
+                  </div>
+                )}
                
                <div className="bg-white rounded-3xl p-10 shadow-xl border border-gray-100 mb-10">
                   <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-50">
@@ -2142,9 +2247,195 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </div>
+          ) : activeTab === 'feeNotifications' ? (
+            <div className="space-y-8 animate-fadeIn">
+              <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-2xl font-black text-ink uppercase tracking-tight">Fee Management Notifications</h3>
+                  <p className="text-xs text-muted font-bold tracking-wider mt-1">Review student payment screenshot submissions & approve fees</p>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {['Pending', 'Approved', 'Rejected', 'All'].map(filter => (
+                    <button
+                      key={filter}
+                      onClick={() => setProofFilter(filter)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${proofFilter === filter ? 'bg-blue text-white shadow-lg shadow-blue/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                      {filter} {filter === 'Pending' && `(${paymentProofs.filter(p => (p.status||'').toLowerCase()==='pending').length})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/50 border-b border-gray-100">
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Student Info</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fee Category & Year</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Amount Paid</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Submitted Date</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Screenshot</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {(() => {
+                        const filtered = paymentProofs.filter(p => {
+                          if (proofFilter === 'All') return true;
+                          return (p.status || '').toLowerCase() === proofFilter.toLowerCase();
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan="7" className="px-6 py-20 text-center text-gray-400 font-bold text-xs uppercase tracking-widest">
+                                No {proofFilter.toLowerCase()} fee payment notifications found.
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filtered.map(proof => {
+                          const isPending = (proof.status || '').toLowerCase() === 'pending';
+                          const isApproved = (proof.status || '').toLowerCase() === 'approved';
+                          const isRejected = (proof.status || '').toLowerCase() === 'rejected';
+
+                          return (
+                            <tr key={proof.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 bg-sky rounded-xl flex items-center justify-center text-blue font-black text-sm shrink-0">
+                                    {proof.student_name?.[0] || 'S'}
+                                  </div>
+                                  <div>
+                                    <h4 className="font-black text-ink text-sm">{proof.student_name || `Student #${proof.student_id}`}</h4>
+                                    <p className="text-[10px] text-muted font-bold uppercase tracking-wider">Roll: {proof.roll_no || 'N/A'} | {proof.course_applied || ''}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="px-3 py-1 bg-blue/10 text-blue font-black text-xs rounded-lg uppercase tracking-wider block w-max mb-1">
+                                  {proof.fee_type}
+                                </span>
+                                <span className="text-[10px] text-muted font-bold uppercase">{proof.academic_year}</span>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className="font-black text-green-600 text-base">₹{Number(proof.amount || 0).toLocaleString()}</span>
+                              </td>
+                              <td className="px-6 py-4 text-center text-[10px] font-bold text-gray-500">
+                                {new Date(proof.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                {proof.screenshot ? (
+                                  <button
+                                    onClick={() => setPreviewProof(proof)}
+                                    className="px-3 py-1.5 bg-gray-100 hover:bg-blue hover:text-white text-gray-700 font-bold text-[10px] rounded-xl uppercase tracking-wider transition-all inline-flex items-center gap-1.5 border border-gray-200"
+                                  >
+                                    <Eye size={14} /> Preview
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-300 text-xs italic">No file</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${isApproved ? 'bg-green-50 text-green-600 border-green-200' : isRejected ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-300 animate-pulse'}`}>
+                                  {isPending ? 'Pending Approval' : proof.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {isPending ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleApproveProof(proof)}
+                                        className="px-4 py-2 bg-[#15803d] hover:bg-[#166534] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md transition-all flex items-center gap-1.5"
+                                      >
+                                        Approve & Edit Fee ↗
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectProof(proof.id)}
+                                        className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all border border-red-100"
+                                        title="Reject Proof"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleApproveProof(proof)}
+                                      className="px-3 py-1.5 bg-gray-100 hover:bg-blue hover:text-white text-ink rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
+                                    >
+                                      Open Student Account ↗
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           ) : null}
         </div>
       </main>
+
+      {/* Screenshot Preview Modal */}
+      {previewProof && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+           <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100">
+              <div className="p-6 bg-blue text-white flex items-center justify-between">
+                 <div>
+                    <h3 className="font-black text-sm uppercase tracking-wider">{previewProof.fee_type} Screenshot Proof</h3>
+                    <p className="text-[10px] opacity-80 uppercase font-bold">{previewProof.student_name} | {previewProof.academic_year}</p>
+                 </div>
+                 <button onClick={() => setPreviewProof(null)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                    <X size={20} />
+                 </button>
+              </div>
+              <div className="p-6 bg-gray-50 flex items-center justify-center min-h-[300px]">
+                 <img 
+                   src={getImageUrl(previewProof.screenshot)} 
+                   alt="Payment Screenshot" 
+                   className="max-h-[450px] w-auto object-contain rounded-2xl border border-gray-200 shadow-md"
+                   onError={(e) => { e.target.onerror = null; e.target.src = '/' + previewProof.screenshot; }}
+                 />
+              </div>
+              <div className="p-6 bg-white border-t border-gray-100 flex items-center justify-between">
+                 <div className="text-left">
+                    <p className="text-[10px] text-muted font-bold uppercase">Claimed Amount</p>
+                    <p className="text-xl font-black text-green-600">₹{Number(previewProof.amount || 0).toLocaleString()}</p>
+                 </div>
+                 <div className="flex gap-2">
+                    {(previewProof.status || '').toLowerCase() === 'pending' && (
+                       <button
+                         onClick={() => {
+                           const p = previewProof;
+                           setPreviewProof(null);
+                           handleApproveProof(p);
+                         }}
+                         className="px-5 py-2.5 bg-[#15803d] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#166534] shadow-lg shadow-green-500/20"
+                       >
+                          Approve & Edit Fee ↗
+                       </button>
+                    )}
+                    <button
+                      onClick={() => setPreviewProof(null)}
+                      className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200"
+                    >
+                       Close
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

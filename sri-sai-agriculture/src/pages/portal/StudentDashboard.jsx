@@ -120,11 +120,14 @@ export default function StudentDashboard() {
 
     try {
       await axios.post(`${API_URL}/student-fees/upload-proof`, formData, { withCredentials: true });
-      alert("Payment proof uploaded successfully! Admin will verify soon.");
+      alert("Payment proof uploaded successfully! Submitted for Management Approval.");
       setShowPayModal(false);
       setScreenshot(null);
+      // Re-fetch profile to update pending status & history immediately
+      const profileRes = await axios.get(`${API_URL}/students/profile`, { withCredentials: true });
+      setStudent(profileRes.data);
     } catch (err) {
-      alert("Upload failed. Please try again.");
+      alert("Upload failed: " + (err.response?.data?.message || err.message));
     } finally {
       setUploading(false);
     }
@@ -330,11 +333,16 @@ export default function StudentDashboard() {
                                   <td className="px-8 py-6 text-center">
                                      {allocated === 0 ? (
                                        <span className="px-3 py-1 bg-gray-50 text-gray-400 text-[9px] font-black uppercase rounded-lg border border-gray-100">Waiting for Admin</span>
+                                     ) : pendingPaid > 0 ? (
+                                       <div className="flex flex-col items-center">
+                                          <span className="px-3 py-1 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded-lg border border-amber-300 shadow-sm animate-pulse">Wait for Management Approval</span>
+                                          <span className="text-[9px] font-bold text-amber-600 mt-1">₹{pendingPaid.toLocaleString()} payment submitted</span>
+                                       </div>
                                      ) : balance <= 0 ? (
                                        <span className="px-3 py-1 bg-green-100 text-green-600 text-[9px] font-black uppercase rounded-lg border border-green-200">Fully Paid</span>
                                      ) : (
                                        <div className="flex flex-col items-center">
-                                          <span className="px-3 py-1 bg-orange-50 text-orange-600 text-[9px] font-black uppercase rounded-lg border border-orange-100">Pending</span>
+                                          <span className="px-3 py-1 bg-orange-50 text-orange-600 text-[9px] font-black uppercase rounded-lg border border-orange-100">Due Remaining</span>
                                           <span className="text-[9px] font-bold text-orange-500 mt-1">₹{balance.toLocaleString()} due</span>
                                        </div>
                                      )}
@@ -456,7 +464,7 @@ export default function StudentDashboard() {
                                              <div className="flex items-center gap-2">
                                                 <h4 className="font-black text-lg text-ink">₹{Number(history.amount || 0).toLocaleString()}</h4>
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${statusColor}`}>
-                                                   {history.is_official ? 'College Ledger' : history.status}
+                                                   {history.is_official ? 'College Ledger' : (history.status?.toLowerCase() === 'pending' ? 'Wait for Management Approval' : history.status)}
                                                 </span>
                                              </div>
                                              <p className="text-[10px] text-muted font-bold uppercase tracking-wider mt-0.5">

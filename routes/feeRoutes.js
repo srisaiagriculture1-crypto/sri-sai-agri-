@@ -82,21 +82,51 @@ router.get("/:studentId", async (req, res) => {
   }
 });
 
+// Get all Payment Proofs for Admin
+router.get("/admin/proofs", authenticate, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT p.*, s.student_name, s.roll_no, s.course_applied, s.branch, s.mobile1, s.email
+       FROM payment_proofs p
+       LEFT JOIN students s ON p.student_id = s.id
+       ORDER BY p.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Upload Payment Proof
-router.post("/upload-proof", authenticate, upload.single("screenshot"), async (req, res) => {
-  const { fee_type, amount, academic_year } = req.body;
-  const studentId = req.user.id;
+router.post("/upload-proof", upload.single("screenshot"), async (req, res) => {
+  const { fee_type, amount, academic_year, student_id } = req.body;
+  
+  let targetStudentId = req.user?.id || req.admin?.id || student_id;
+  if (!targetStudentId && req.cookies.studentToken) {
+    try {
+      const jwt = require("jsonwebtoken");
+      const secret = process.env.JWT_SECRET || "srisai_secret_key_123";
+      const decoded = jwt.verify(req.cookies.studentToken, secret);
+      targetStudentId = decoded.id;
+    } catch(e) {}
+  }
+
+  if (!targetStudentId) {
+    return res.status(400).json({ message: "Student identification required" });
+  }
+
   const screenshot = req.file ? req.file.path.replace(/\\/g, "/") : "";
 
   if (!screenshot) return res.status(400).json({ message: "Screenshot required" });
 
   try {
     await pool.query(
-      "INSERT INTO payment_proofs (student_id, fee_type, amount, academic_year, screenshot) VALUES (?, ?, ?, ?, ?)",
-      [studentId, fee_type, amount, academic_year, screenshot]
+      "INSERT INTO payment_proofs (student_id, fee_type, amount, academic_year, screenshot, status) VALUES (?, ?, ?, ?, ?, 'Pending')",
+      [targetStudentId, fee_type || 'Registration Fee', amount || 0, academic_year || '1st year', screenshot]
     );
     res.status(201).json({ message: "Payment proof submitted successfully" });
   } catch (err) {
+    console.error("Upload proof error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -140,7 +170,7 @@ router.put("/proofs/:proofId/status", authenticate, async (req, res) => {
       }
     }
 
-    res.json({ message: `Payment proof ${status.toLowerCase()} successfully` });
+    res.json({ message: `Payment proof ${status.toLowerCase()} successfully`, proof });
   } catch (err) {
     console.error("Error updating payment proof status:", err);
     res.status(500).json({ message: err.message });

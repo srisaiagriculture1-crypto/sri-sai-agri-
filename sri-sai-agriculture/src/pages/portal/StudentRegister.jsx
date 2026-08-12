@@ -101,6 +101,8 @@ export default function StudentRegister() {
     setScreenshot(file);
   };
 
+  const [createdStudentId, setCreatedStudentId] = useState(null);
+
   const handlePaymentSubmit = async () => {
     if (!screenshot) return;
     setUploading(true);
@@ -109,16 +111,19 @@ export default function StudentRegister() {
     payload.append("fee_type", "Registration Fee");
     payload.append("amount", settings.registration_fee || "2000");
     payload.append("academic_year", "1st year");
+    if (createdStudentId) {
+      payload.append("student_id", createdStudentId);
+    }
     
     try {
-      await axios.post(`${API_URL}/fees/upload-proof`, payload, {
+      await axios.post(`${API_URL}/student-fees/upload-proof`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true
       });
       alert("Payment proof submitted successfully! Our team will verify it.");
       navigate("/portal/login");
     } catch (err) {
-      alert("Failed to upload proof. Please try again.");
+      alert("Failed to upload proof: " + (err.response?.data?.message || err.message));
     } finally {
       setUploading(false);
     }
@@ -136,9 +141,12 @@ export default function StudentRegister() {
     if (photo) payload.append('photo', photo);
 
     try {
-      await axios.post(`${API_URL}/students/register`, payload, {
+      const res = await axios.post(`${API_URL}/students/register`, payload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      if (res.data && res.data.studentId) {
+        setCreatedStudentId(res.data.studentId);
+      }
       setShowPayment(true);
     } catch (err) {
       alert(err.response?.data?.message || "Registration failed");
