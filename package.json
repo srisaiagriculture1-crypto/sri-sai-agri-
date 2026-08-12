@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "init-admin": "node initAdmin.js",
-    "build": "cd sri-sai-agriculture && npm install && npm run build",
+    "build": "cd sri-sai-agriculture && npm install --legacy-peer-deps && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
