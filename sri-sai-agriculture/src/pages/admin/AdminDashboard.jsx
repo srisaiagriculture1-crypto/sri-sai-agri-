@@ -1722,14 +1722,9 @@ export default function AdminDashboard() {
                                         <div className="space-y-2">
                                           <div>
                                             <label className="text-[9px] font-bold text-gray-400 block mb-1">Total Fee (₹)</label>
-                                            <input
-                                              type="number"
-                                              className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                              value={fee[cat.keyTotal] === 0 || fee[cat.keyTotal] === '0' || !fee[cat.keyTotal] ? '' : fee[cat.keyTotal]}
-                                              placeholder="0"
-                                              onFocus={(e) => e.target.select()}
-                                              onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}
-                                            />
+                                            <div className="w-full px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl font-bold text-ink text-xs">
+                                              {Number(fee[cat.keyTotal] || 0).toLocaleString() || '0'}
+                                            </div>
                                           </div>
                                           <div>
                                             <label className="text-[9px] font-bold text-green-600 block mb-1">Paid Amount (₹)</label>
