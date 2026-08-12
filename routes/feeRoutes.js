@@ -124,7 +124,11 @@ router.post("/upload-proof", upload.single("screenshot"), async (req, res) => {
     return res.status(400).json({ message: "Student identification required" });
   }
 
-  const screenshot = req.file ? req.file.path.replace(/\\/g, "/") : "";
+  let screenshot = req.file ? req.file.path.replace(/\\/g, "/") : "";
+  const uploadIdx = screenshot.indexOf("uploads/");
+  if (uploadIdx !== -1) {
+    screenshot = screenshot.substring(uploadIdx);
+  }
 
   if (!screenshot) return res.status(400).json({ message: "Screenshot required" });
 

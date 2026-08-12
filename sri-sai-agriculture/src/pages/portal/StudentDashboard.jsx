@@ -15,6 +15,18 @@ export default function StudentDashboard() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const navigate = useNavigate();
 
+  const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+    const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
+    const uploadIndex = cleanPath.indexOf('uploads/');
+    if (uploadIndex !== -1) {
+      return '/' + cleanPath.substring(uploadIndex);
+    }
+    const filename = cleanPath.split('/').pop();
+    return `/uploads/${filename}`;
+  };
+
   const getFeeStats = (fee, type) => {
     let allocated = 0;
     let directPaid = 0;
@@ -518,7 +530,7 @@ export default function StudentDashboard() {
                                              </span>
                                           ) : history.screenshot ? (
                                              <a 
-                                                href={`/${history.screenshot}`} 
+                                                href={getImageUrl(history.screenshot)} 
                                                 target="_blank" 
                                                 rel="noreferrer"
                                                 className="px-5 py-2.5 bg-sky hover:bg-blue hover:text-white text-blue border border-sky rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center flex-grow md:flex-grow-0"

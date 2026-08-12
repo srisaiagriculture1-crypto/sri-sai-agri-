@@ -104,18 +104,14 @@ export default function AdminDashboard() {
 
   const getImageUrl = (path) => {
     if (!path) return '';
-    if (path.startsWith('http') || path.startsWith('data:')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
     const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
-    if (cleanPath.startsWith('uploads/')) {
-      return `/${cleanPath}`;
+    const uploadIndex = cleanPath.indexOf('uploads/');
+    if (uploadIndex !== -1) {
+      return '/' + cleanPath.substring(uploadIndex);
     }
-    if (cleanPath.includes('/')) {
-      return `/${cleanPath}`;
-    }
-    if (/^\d{10,}/.test(cleanPath)) {
-      return `/uploads/${cleanPath}`;
-    }
-    return `/${cleanPath}`;
+    const filename = cleanPath.split('/').pop();
+    return `/uploads/${filename}`;
   };
 
   const parseDateForInput = (dob) => {
