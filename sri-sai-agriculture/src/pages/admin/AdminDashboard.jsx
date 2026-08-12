@@ -103,8 +103,11 @@ export default function AdminDashboard() {
 
   const getImageUrl = (path) => {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http') || path.startsWith('data:')) return path;
     const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
+    if (!cleanPath.toLowerCase().startsWith('uploads/')) {
+      return `/uploads/${cleanPath}`;
+    }
     return `/${cleanPath}`;
   };
 
@@ -234,16 +237,13 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const handleApproveProof = async (proof) => {
+  const handleOpenStudentAccount = async (proof) => {
     try {
       setLoading(true);
-      await axios.put(`${API_URL}/student-fees/proofs/${proof.id}/status`, { status: 'Approved' }, { withCredentials: true });
-      
       const studentsRes = await axios.get(`${API_URL}/students/admin/list`);
       setStudents(studentsRes.data);
-      await fetchPaymentProofs();
 
-      const targetStudent = studentsRes.data.find(s => s.id === proof.student_id);
+      const targetStudent = studentsRes.data.find(s => String(s.id) === String(proof.student_id));
       if (targetStudent) {
         setSelectedStudent(targetStudent);
         let mapped = { ...targetStudent };
@@ -262,11 +262,25 @@ export default function AdminDashboard() {
           screenshot: proof.screenshot
         });
       } else {
-        alert("Payment proof approved successfully!");
+        alert(`Student profile for ${proof.student_name || 'ID ' + proof.student_id} not found in database.`);
       }
     } catch (err) {
-      alert("Failed to approve payment proof: " + (err.response?.data?.message || err.message));
+      alert("Failed to open student account: " + (err.response?.data?.message || err.message));
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveProof = async (proof) => {
+    try {
+      setLoading(true);
+      if ((proof.status || '').toLowerCase() !== 'approved') {
+        await axios.put(`${API_URL}/student-fees/proofs/${proof.id}/status`, { status: 'Approved' }, { withCredentials: true });
+      }
+      await fetchPaymentProofs();
+      await handleOpenStudentAccount(proof);
+    } catch (err) {
+      alert("Failed to approve payment proof: " + (err.response?.data?.message || err.message));
       setLoading(false);
     }
   };
@@ -2252,7 +2266,7 @@ export default function AdminDashboard() {
                                     </>
                                   ) : (
                                     <button
-                                      onClick={() => handleApproveProof(proof)}
+                                      onClick={() => handleOpenStudentAccount(proof)}
                                       className="px-3 py-1.5 bg-gray-100 hover:bg-blue hover:text-white text-ink rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
                                     >
                                       Open Student Account ↗
@@ -2399,13 +2413,30 @@ export default function AdminDashboard() {
                     <X size={20} />
                  </button>
               </div>
-              <div className="p-6 bg-gray-50 flex items-center justify-center min-h-[300px]">
+              <div className="p-6 bg-gray-50 flex flex-col items-center justify-center min-h-[300px] gap-3">
                  <img 
                    src={getImageUrl(previewProof.screenshot)} 
                    alt="Payment Screenshot" 
                    className="max-h-[450px] w-auto object-contain rounded-2xl border border-gray-200 shadow-md"
-                   onError={(e) => { e.target.onerror = null; e.target.src = '/' + previewProof.screenshot; }}
+                   onError={(e) => { 
+                      e.target.onerror = null; 
+                      const raw = previewProof.screenshot || '';
+                      const filename = raw.split(/[\/\\]/).pop();
+                      if (filename && !e.target.src.endsWith(filename)) {
+                        e.target.src = '/uploads/' + filename;
+                      }
+                    }}
                  />
+                 {previewProof.screenshot && (
+                    <a 
+                      href={getImageUrl(previewProof.screenshot)} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-blue hover:underline flex items-center gap-1 mt-2"
+                    >
+                      Open Screenshot Image in New Tab ↗
+                    </a>
+                  )}
               </div>
               <div className="p-6 bg-white border-t border-gray-100 flex items-center justify-between">
                  <div className="text-left">
