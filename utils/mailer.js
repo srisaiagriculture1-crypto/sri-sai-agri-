@@ -16,17 +16,23 @@ const transporter = nodemailer.createTransport({
     socketTimeout: 4000,
 });
 
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, attachments = []) => {
     if (!to || typeof to !== 'string' || !to.includes('@') || to.toLowerCase() === 'null') {
         return false;
     }
     try {
-        const info = await transporter.sendMail({
+        const mailOptions = {
             from: `"Sri Sai Institute" <${process.env.SMTP_FROM || process.env.SMTP_USER || 'info@srisaiagriculture.com'}>`,
             to,
             subject,
             html,
-        });
+        };
+
+        if (attachments && attachments.length > 0) {
+            mailOptions.attachments = attachments;
+        }
+
+        const info = await transporter.sendMail(mailOptions);
         console.log('Email sent: %s to %s', info.messageId, to);
         return true;
     } catch (error) {

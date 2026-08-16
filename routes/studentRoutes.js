@@ -7,6 +7,8 @@ const upload = require("../utils/multerConfig");
 const authenticate = require("../utils/authMiddleware");
 const { sendEmail } = require('../utils/mailer');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 
 // Register Student
 router.post("/register", upload.single("photo"), async (req, res) => {
@@ -466,7 +468,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
               <table align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto 16px auto;">
                 <tr>
                   <td style="background: #ffffff; padding: 10px; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.2);">
-                    <img src="https://srisaiagriculture.com/logo.png" alt="Sri Sai Institute Logo" width="60" height="60" style="display: block; border: 0; outline: none; object-contain: contain;" />
+                    <img src="cid:collegelogo" alt="Sri Sai Institute Logo" width="60" height="60" style="display: block; border: 0; outline: none; margin: 0 auto;" />
                   </td>
                 </tr>
               </table>
@@ -591,6 +593,29 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
       });
     }
 
+    // Prepare CID inline attachment for logo so all email clients (Gmail, Outlook) render it
+    const possibleLogoPaths = [
+      path.join(__dirname, '../public/logo.png'),
+      path.join(__dirname, '../sri-sai-agriculture/public/logo.png'),
+      path.join(__dirname, '../sri-sai-agriculture/build/logo.png')
+    ];
+    let logoPath = null;
+    for (const p of possibleLogoPaths) {
+      if (fs.existsSync(p)) {
+        logoPath = p;
+        break;
+      }
+    }
+
+    const emailAttachments = [];
+    if (logoPath) {
+      emailAttachments.push({
+        filename: 'logo.png',
+        path: logoPath,
+        cid: 'collegelogo'
+      });
+    }
+
     // Process concurrently in parallel batches of 8 for ultra-fast dispatch
     const BATCH_SIZE = 8;
     let sent = 0;
@@ -599,7 +624,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
     for (let i = 0; i < studentsToEmail.length; i += BATCH_SIZE) {
       const batch = studentsToEmail.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
-        batch.map(item => sendEmail(item.email, item.subject, item.html))
+        batch.map(item => sendEmail(item.email, item.subject, item.html, emailAttachments))
       );
       results.forEach(res => {
         if (res.status === 'fulfilled' && res.value) {
