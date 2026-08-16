@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const API_URL = "/api";
 
@@ -17,17 +18,6 @@ export default function StudentDashboard() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const navigate = useNavigate();
 
-  const getImageUrl = (path) => {
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
-    const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
-    const uploadIndex = cleanPath.indexOf('uploads/');
-    if (uploadIndex !== -1) {
-      return '/' + cleanPath.substring(uploadIndex);
-    }
-    const filename = cleanPath.split('/').pop();
-    return `/uploads/${filename}`;
-  };
 
   const downloadFeeInvoice = (payment, studentData) => {
     try {

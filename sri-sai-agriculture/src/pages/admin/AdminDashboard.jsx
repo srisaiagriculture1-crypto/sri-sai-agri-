@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getImageUrl } from '../../utils/imageUrl';
 import { 
   Users, 
   BookOpen, 
@@ -101,18 +102,6 @@ export default function AdminDashboard() {
     if (diff === 1) return '2nd Year';
     if (diff === 2) return '3rd Year';
     return '4th Year';
-  };
-
-  const getImageUrl = (path) => {
-    if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
-    const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
-    const uploadIndex = cleanPath.indexOf('uploads/');
-    if (uploadIndex !== -1) {
-      return '/' + cleanPath.substring(uploadIndex);
-    }
-    const filename = cleanPath.split('/').pop();
-    return `/uploads/${filename}`;
   };
 
   const downloadFeeInvoice = (payment, studentData) => {
@@ -685,7 +674,9 @@ export default function AdminDashboard() {
         mapped.details = Array.isArray(arr) ? arr.join('\n') : item.details;
       } catch { mapped.details = item.details; }
     }
-    if (activeTab === 'hero' && item.h1) mapped.h1 = JSON.stringify(item.h1);
+    if (activeTab === 'hero' && item.h1) {
+      mapped.h1 = Array.isArray(item.h1) ? JSON.stringify(item.h1) : item.h1;
+    }
 
     if (activeTab === 'gallery') {
       mapped.label = item.label;
@@ -2376,22 +2367,129 @@ export default function AdminDashboard() {
               onDeleteField={deleteField}
             />
           ) : viewMode === 'list' && activeTab === 'hero' ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {data.map((item, idx) => (
-                  <div key={item.id || idx} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all group">
-                    <div className="relative h-44 bg-gray-100 overflow-hidden">
-                      {item.image ? (
-                        <img src={getImageUrl(item.image)} alt={item.tag} className="w-full h-full object-cover" />
-                      ) : null}
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        <button onClick={() => { setFormData({...item}); setEditingId(item.id); setViewMode('form'); }} className="p-2 bg-white rounded-xl shadow-lg"><Edit3 size={14} /></button>
-                        <button onClick={() => handleDelete(item.id)} className="p-2 bg-white rounded-xl shadow-lg text-red-500"><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-ink">Hero Slides</h3>
+                  <p className="text-xs text-muted font-medium">Manage slides rotating on the website homepage</p>
+                </div>
+                <button
+                  onClick={() => { setFormData({}); setFile(null); setEditingId(null); setViewMode('form'); }}
+                  className="flex items-center gap-2 px-5 py-3 bg-blue text-white rounded-2xl text-xs font-bold uppercase tracking-wider hover:bg-ink transition-all shadow-lg shadow-blue/20"
+                >
+                  <Plus size={16} /> Add New Slide
+                </button>
               </div>
+
+              {(!data || data.length === 0) ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                  <div className="w-16 h-16 bg-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue">
+                    <LayoutDashboard size={32} />
+                  </div>
+                  <h4 className="font-bold text-ink text-lg mb-1">No Hero Slides Configured</h4>
+                  <p className="text-xs text-muted mb-6">Create slides to highlight admissions, programs, and announcements.</p>
+                  <button
+                    onClick={() => { setFormData({}); setFile(null); setEditingId(null); setViewMode('form'); }}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue text-white rounded-2xl text-xs font-bold uppercase tracking-wider hover:bg-ink transition-all shadow-lg shadow-blue/20"
+                  >
+                    <Plus size={16} /> Create First Slide
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {data.map((item, idx) => {
+                    let parsedH1 = item.h1;
+                    try {
+                      if (typeof item.h1 === 'string' && (item.h1.startsWith('[') || item.h1.startsWith('{'))) {
+                        const parsed = JSON.parse(item.h1);
+                        parsedH1 = Array.isArray(parsed) ? parsed.join(' ') : String(parsed);
+                      }
+                    } catch (e) {
+                      parsedH1 = item.h1;
+                    }
+
+                    return (
+                      <div key={item.id || idx} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl transition-all group flex flex-col">
+                        {/* Slide Banner Preview */}
+                        <div 
+                          className="relative h-48 overflow-hidden flex items-end p-5"
+                          style={{
+                            background: item.bg_gradient || "linear-gradient(115deg,#071428 0%,#065f46 45%,#15803d 100%)"
+                          }}
+                        >
+                          {item.image ? (
+                            <img 
+                              src={getImageUrl(item.image)} 
+                              alt={item.tag || "Hero slide"} 
+                              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-80"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : null}
+                          
+                          {/* Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+                          {/* Tag badge & Actions */}
+                          <div className="relative z-10 w-full flex items-start justify-between gap-2">
+                            <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] font-bold rounded-full uppercase tracking-wider shadow-sm line-clamp-1">
+                              {item.tag || 'Slide Tag'}
+                            </span>
+                            <div className="flex gap-2 shrink-0">
+                              <button 
+                                onClick={() => handleEdit(item)} 
+                                className="p-2.5 bg-white text-ink hover:bg-blue hover:text-white rounded-xl shadow-lg transition-all"
+                                title="Edit slide"
+                              >
+                                <Edit3 size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(item.id)} 
+                                className="p-2.5 bg-white text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-lg transition-all"
+                                title="Delete slide"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Slide Content Details */}
+                        <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                          <div className="space-y-2">
+                            <h4 className="font-bold text-ink text-base leading-snug line-clamp-2" dangerouslySetInnerHTML={{ __html: parsedH1 || "Untitled Slide" }} />
+                            {item.motto && (
+                              <p className="text-xs italic text-blue font-medium line-clamp-2 border-l-2 border-blue/40 pl-2">
+                                {item.motto}
+                              </p>
+                            )}
+                            {item.description && (
+                              <p className="text-xs text-muted line-clamp-3 leading-relaxed">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Buttons preview */}
+                          {(item.btn1_label || item.btn2_label) && (
+                            <div className="pt-3 border-t border-gray-100 flex flex-wrap gap-2 text-[11px]">
+                              {item.btn1_label && (
+                                <span className="px-2.5 py-1 bg-gray-100 text-ink rounded-lg font-bold">
+                                  {item.btn1_label} → <span className="text-muted font-normal">{item.btn1_href || '#'}</span>
+                                </span>
+                              )}
+                              {item.btn2_label && (
+                                <span className="px-2.5 py-1 bg-gray-50 border border-gray-200 text-muted rounded-lg font-medium">
+                                  {item.btn2_label} → {item.btn2_href || '#'}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : activeTab === 'feeNotifications' ? (
             <div className="space-y-8 animate-fadeIn">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useSlider } from "../../hooks/useSlider";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const FALLBACK_SLIDES = [
   {
@@ -60,8 +61,8 @@ export default function HeroSlider() {
               h1: h1Array,
               motto: s.motto,
               desc: s.description,
-              img: s.image?.startsWith('http') ? s.image : `${s.image?.startsWith('/') ? '' : '/'}${s.image}`,
-              bg: s.bg_gradient,
+              img: s.image ? getImageUrl(s.image) : "/internship-photos/intern-1.png",
+              bg: s.bg_gradient || "linear-gradient(115deg,#071428 0%,#065f46 45%,#15803d 100%)",
               btn1: s.btn1_label ? { label: s.btn1_label, href: s.btn1_href || "#" } : null,
               btn2: s.btn2_label ? { label: s.btn2_label, href: s.btn2_href || "#" } : null,
               stats: Array.isArray(s.stats) ? s.stats : []
@@ -104,7 +105,14 @@ export default function HeroSlider() {
 
           {/* BG */}
           <div className="absolute inset-0 w-full h-full overflow-hidden">
-            <img src={s.img} className="w-full h-full object-cover" alt="" />
+            {s.img && (
+              <img 
+                src={s.img} 
+                className="w-full h-full object-cover" 
+                alt="" 
+                onError={(e) => { e.target.style.display = 'none'; }} 
+              />
+            )}
             <div className="absolute inset-0 hero-bg-pattern opacity-60" style={{ background: s.bg }} />
             <div className="absolute inset-0 bg-black/40" />
           </div>
