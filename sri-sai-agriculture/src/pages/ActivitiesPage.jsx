@@ -3,6 +3,7 @@ import { useImageModal } from "../hooks/useImageModal";
 import PageHeader from "../components/ui/PageHeader";
 import Contact from "../components/sections/Contact";
 import Reveal from "../components/ui/Reveal";
+import { getImageUrl } from "../utils/imageUrl";
 
 export default function ActivitiesPage() {
   const { openModal } = useImageModal();
