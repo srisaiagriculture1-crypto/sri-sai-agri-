@@ -1998,7 +1998,7 @@ export default function AdminDashboard() {
                               withCredentials: true,
                               timeout: 25000 
                             });
-                            alert(`✅ Fee Reminders Processed!\n\n📧 Successfully Sent: ${res.data.sent || 0} student(s)\n⚠️ Skipped / Failed: ${res.data.failed || 0}\n👥 Total Enrolled: ${res.data.total || 0}`);
+                            alert(`✅ Fee Reminders Broadcast Complete!\n\n📧 Successfully Sent: ${res.data.sent || 0} student(s)\n⚠️ Skipped (No Email in Profile): ${res.data.skipped_no_email || 0} student(s)\n❌ Delivery Errors: ${res.data.failed || 0}\n👥 Total Enrolled: ${res.data.total || 0}`);
                           } catch (err) {
                             if (err.code === 'ECONNABORTED') {
                               alert('✅ Fee reminders broadcast started in background. Emails are being delivered.');

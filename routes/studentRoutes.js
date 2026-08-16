@@ -463,10 +463,17 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a4731 0%, #15803d 100%); padding: 36px 40px; text-align: center;">
-              <p style="margin:0 0 8px 0; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;">Official Communication</p>
+              <table align="center" cellpadding="0" cellspacing="0" style="margin: 0 auto 16px auto;">
+                <tr>
+                  <td style="background: #ffffff; padding: 10px; border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.2);">
+                    <img src="https://srisaiagriculture.com/logo.png" alt="Sri Sai Institute Logo" width="60" height="60" style="display: block; border: 0; outline: none; object-contain: contain;" />
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 8px 0; color: rgba(255,255,255,0.75); font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;">Official Communication</p>
               <h1 style="margin:0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Sri Sai Institute of</h1>
               <h1 style="margin:0; color: #86efac; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Agricultural Sciences</h1>
-              <p style="margin: 12px 0 0; color: rgba(255,255,255,0.7); font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Fee Payment Reminder — ${currentYear}</p>
+              <p style="margin: 12px 0 0; color: rgba(255,255,255,0.8); font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Fee Payment Reminder — ${currentYear}</p>
             </td>
           </tr>
 
@@ -606,6 +613,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
     res.json({
       message: `Fee reminder emails processed successfully.`,
       sent,
+      skipped_no_email: students.length - studentsToEmail.length,
       failed,
       total: students.length
     });
