@@ -39,7 +39,8 @@ import {
   PhoneCall,
   MessageSquare,
   MessageCircle,
-  FileText
+  FileText,
+  Receipt
 } from 'lucide-react';
 
 const API_URL = '/api';
