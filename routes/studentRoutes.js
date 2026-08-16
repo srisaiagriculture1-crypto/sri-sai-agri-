@@ -339,9 +339,16 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
       return res.status(404).json({ message: "No students found in database." });
     }
 
-    // Fetch all fees
+    // Fetch all fees with full component breakdown
     const [fees] = await pool.query(
-      "SELECT student_id, academic_year, total_fee, hostel_fee, paid_amount, committed_fee FROM student_fees"
+      `SELECT 
+        student_id, academic_year, 
+        total_fee, paid_amount, committed_fee, admission_fee,
+        hostel_fee, hostel_fee_paid,
+        exam_fee, exam_fee_paid,
+        practical_fee, practical_fee_paid,
+        travelling_fee, travelling_fee_paid
+      FROM student_fees`
     );
 
     // Map fees by student
@@ -361,28 +368,80 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
 
       const studentFees = feesByStudent[student.id] || [];
 
-      // Calculate overall outstanding
       let totalDue = 0;
       let totalPaid = 0;
       let feeRowsHtml = '';
 
       studentFees.forEach(f => {
-        const due = Number(f.total_fee || 0) + Number(f.hostel_fee || 0);
-        const paid = Number(f.paid_amount || 0);
-        const balance = Math.max(0, due - paid);
-        totalDue += due;
-        totalPaid += paid;
+        const yearLabel = (f.academic_year || '1st Year').toUpperCase();
 
-        if (due > 0) {
+        const components = [
+          {
+            name: "College Tuition / Academic Fee",
+            total: Number(f.total_fee || f.committed_fee || 0),
+            paid: Number(f.paid_amount || 0)
+          },
+          {
+            name: "Hostel Fee",
+            total: Number(f.hostel_fee || 0),
+            paid: Number(f.hostel_fee_paid || 0)
+          },
+          {
+            name: "Examination Fee",
+            total: Number(f.exam_fee || 0),
+            paid: Number(f.exam_fee_paid || 0)
+          },
+          {
+            name: "Practical / Lab Fee",
+            total: Number(f.practical_fee || 0),
+            paid: Number(f.practical_fee_paid || 0)
+          },
+          {
+            name: "Travelling / Bus Fee",
+            total: Number(f.travelling_fee || 0),
+            paid: Number(f.travelling_fee_paid || 0)
+          }
+        ];
+
+        components.forEach(comp => {
+          if (comp.total > 0 || comp.paid > 0) {
+            const balance = Math.max(0, comp.total - comp.paid);
+            totalDue += comp.total;
+            totalPaid += comp.paid;
+
+            feeRowsHtml += `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px 16px; font-weight: 600; color: #1e293b; font-size: 13px;">
+                  ${comp.name}
+                  <div style="color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">
+                    ${yearLabel}
+                  </div>
+                </td>
+                <td style="padding: 12px 16px; text-align: right; color: #334155; font-size: 13px; font-weight: 600;">₹${comp.total.toLocaleString('en-IN')}</td>
+                <td style="padding: 12px 16px; text-align: right; color: #16a34a; font-size: 13px; font-weight: 600;">₹${comp.paid.toLocaleString('en-IN')}</td>
+                <td style="padding: 12px 16px; text-align: right; color: ${balance > 0 ? '#dc2626' : '#16a34a'}; font-weight: 800; font-size: 13px;">₹${balance.toLocaleString('en-IN')}</td>
+              </tr>`;
+          }
+        });
+      });
+
+      // If no itemized components had fee > 0, fallback to basic record
+      if (!feeRowsHtml && studentFees.length > 0) {
+        studentFees.forEach(f => {
+          const due = Number(f.total_fee || 0);
+          const paid = Number(f.paid_amount || 0);
+          const balance = Math.max(0, due - paid);
+          totalDue += due;
+          totalPaid += paid;
           feeRowsHtml += `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px 16px; font-weight: 600; color: #334155; text-transform: uppercase; font-size: 12px;">${f.academic_year}</td>
-              <td style="padding: 12px 16px; text-align: right; color: #334155; font-size: 13px;">₹${due.toLocaleString('en-IN')}</td>
+              <td style="padding: 12px 16px; font-weight: 600; color: #1e293b; font-size: 13px;">Total Academic Fee (${f.academic_year})</td>
+              <td style="padding: 12px 16px; text-align: right; color: #334155; font-size: 13px; font-weight: 600;">₹${due.toLocaleString('en-IN')}</td>
               <td style="padding: 12px 16px; text-align: right; color: #16a34a; font-size: 13px; font-weight: 600;">₹${paid.toLocaleString('en-IN')}</td>
-              <td style="padding: 12px 16px; text-align: right; color: ${balance > 0 ? '#dc2626' : '#16a34a'}; font-weight: 700; font-size: 13px;">₹${balance.toLocaleString('en-IN')}</td>
+              <td style="padding: 12px 16px; text-align: right; color: ${balance > 0 ? '#dc2626' : '#16a34a'}; font-weight: 800; font-size: 13px;">₹${balance.toLocaleString('en-IN')}</td>
             </tr>`;
-        }
-      });
+        });
+      }
 
       const totalBalance = Math.max(0, totalDue - totalPaid);
       const currentYear = new Date().getFullYear();
@@ -414,7 +473,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
           <!-- Important Notice Banner -->
           <tr>
             <td style="background: #fef9c3; border-left: 4px solid #ca8a04; padding: 14px 40px;">
-              <p style="margin:0; color: #78350f; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">⚠️ Action Required — Fee Payment Due</p>
+              <p style="margin:0; color: #78350f; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">⚠️ Action Required — Outstanding Fee Dues</p>
             </td>
           </tr>
 
@@ -425,7 +484,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
               <h2 style="margin: 0 0 24px; color: #0f172a; font-size: 22px; font-weight: 800;">${student.student_name}</h2>
 
               <p style="margin: 0 0 24px; color: #475569; font-size: 14px; line-height: 1.7;">
-                We hope this message finds you well. This is a formal reminder from the <strong>Accounts Department</strong> of Sri Sai Institute of Agricultural Sciences regarding your outstanding fee dues for the current academic session.
+                We hope this message finds you well. This is an official notice from the <strong>Accounts & Finance Department</strong> of Sri Sai Institute of Agricultural Sciences regarding your pending fee breakdown for the academic year.
               </p>
 
               <!-- Student Info Box -->
@@ -438,11 +497,11 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
                         <td style="padding: 4px 0; color: #0f172a; font-size: 13px; font-weight: 700;">${student.roll_no || 'N/A'}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Course</td>
+                        <td style="padding: 4px 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Course Applied</td>
                         <td style="padding: 4px 0; color: #0f172a; font-size: 13px; font-weight: 700;">${student.course_applied || 'N/A'}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Date</td>
+                        <td style="padding: 4px 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Issue Date</td>
                         <td style="padding: 4px 0; color: #0f172a; font-size: 13px; font-weight: 700;">${todayStr}</td>
                       </tr>
                     </table>
@@ -450,16 +509,16 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
                 </tr>
               </table>
 
-              <!-- Fee Table -->
+              <!-- Itemized Fee Statement Table -->
               ${feeRowsHtml ? `
-              <p style="margin: 0 0 12px; color: #0f172a; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Fee Statement</p>
+              <p style="margin: 0 0 12px; color: #0f172a; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Itemized Fee Statement</p>
               <table width="100%" cellpadding="0" cellspacing="0" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 28px;">
                 <thead>
                   <tr style="background: #1a4731;">
-                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: left;">Year</th>
-                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Total Fee</th>
-                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Paid</th>
-                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Balance</th>
+                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: left;">Fee Component</th>
+                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Total (₹)</th>
+                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Paid (₹)</th>
+                    <th style="padding: 12px 16px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: right;">Due (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -467,30 +526,32 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
                 </tbody>
                 <tfoot>
                   <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0;">
-                    <td colspan="3" style="padding: 14px 16px; font-weight: 800; font-size: 13px; color: #0f172a; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Outstanding Balance</td>
+                    <td style="padding: 14px 16px; font-weight: 800; font-size: 13px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Grand Total Due</td>
+                    <td style="padding: 14px 16px; font-weight: 700; font-size: 13px; color: #334155; text-align: right;">₹${totalDue.toLocaleString('en-IN')}</td>
+                    <td style="padding: 14px 16px; font-weight: 700; font-size: 13px; color: #16a34a; text-align: right;">₹${totalPaid.toLocaleString('en-IN')}</td>
                     <td style="padding: 14px 16px; font-weight: 800; font-size: 16px; color: ${totalBalance > 0 ? '#dc2626' : '#16a34a'}; text-align: right;">₹${totalBalance.toLocaleString('en-IN')}</td>
                   </tr>
                 </tfoot>
               </table>` : ''}
 
               <p style="margin: 0 0 24px; color: #475569; font-size: 14px; line-height: 1.7;">
-                We kindly request you to clear your outstanding dues at the earliest to avoid any inconvenience to your academic progress, including <strong>hall ticket issuance, result declaration,</strong> and <strong>participation in college events</strong>.
+                Please ensure all pending dues are cleared promptly to maintain regular eligibility for academic activities, examination hall tickets, and hostel services.
               </p>
 
               <!-- CTA Box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 12px; border: 1px solid #bbf7d0; margin-bottom: 28px;">
                 <tr>
                   <td style="padding: 24px;">
-                    <p style="margin: 0 0 8px; color: #15803d; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">How to Pay</p>
-                    <p style="margin: 0; color: #166534; font-size: 13px; line-height: 1.6;">Log in to the <strong>Student Portal</strong>, navigate to <strong>Fee Payments</strong>, and submit your payment screenshot for verification. Our accounts team will approve it within 24 hours.</p>
+                    <p style="margin: 0 0 8px; color: #15803d; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Online Payment Instructions</p>
+                    <p style="margin: 0; color: #166534; font-size: 13px; line-height: 1.6;">Log in to your <strong>Student Portal</strong> at <a href="https://srisaiagriculture.com/portal/login" style="color:#15803d; font-weight:700;">srisaiagriculture.com</a>, go to <strong>Fee Payments</strong>, scan the UPI QR code or use the provided bank account details, and upload your payment transaction screenshot.</p>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin: 0 0 6px; color: #475569; font-size: 13px; line-height: 1.7;">For queries, contact the accounts office or reach us at our college helpline during working hours (9:00 AM – 5:00 PM, Mon–Sat).</p>
+              <p style="margin: 0 0 6px; color: #475569; font-size: 13px; line-height: 1.7;">For fee adjustments or enquiries, please visit the Accounts Office on campus during working hours (9:00 AM – 5:00 PM, Monday through Saturday).</p>
 
               <p style="margin: 24px 0 0; color: #94a3b8; font-size: 12px; font-style: italic; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                ✅ <strong>Please ignore this email if you have already completed your fee payment.</strong> Your payment may be under review or pending approval.
+                ✅ <strong>Note:</strong> If you have recently submitted payment proof through the portal and it is awaiting verification, kindly disregard this notice.
               </p>
             </td>
           </tr>
