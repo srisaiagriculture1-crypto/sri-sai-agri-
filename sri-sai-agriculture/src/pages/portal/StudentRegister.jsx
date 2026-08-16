@@ -120,8 +120,8 @@ export default function StudentRegister() {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true
       });
-      alert("Payment proof submitted successfully! Our team will verify it.");
-      navigate("/portal/login");
+      alert("Registration & payment proof submitted successfully! Our admissions team will review your application and contact you.");
+      navigate("/");
     } catch (err) {
       alert("Failed to upload proof: " + (err.response?.data?.message || err.message));
     } finally {
@@ -231,10 +231,10 @@ export default function StudentRegister() {
                    {uploading ? "Processing..." : "Confirm & Submit Registration"}
                 </button>
                 <button 
-                  onClick={() => navigate("/portal/login")}
+                  onClick={() => navigate("/")}
                   className="text-center text-[10px] font-black text-muted uppercase tracking-widest hover:text-blue transition-colors"
                 >
-                   I've already paid, go to login
+                   Return to Home
                 </button>
              </div>
           </div>
