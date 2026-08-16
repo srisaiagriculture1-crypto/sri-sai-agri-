@@ -18,11 +18,13 @@ router.get("/", async (req, res) => {
 router.post("/", authenticate, upload.single("image"), async (req, res) => {
   const { name, initials, department, experience, category } = req.body;
   const image = req.file ? req.file.path.replace(/\\/g, "/") : "";
+  const cat = category || department || "";
+  const init = initials || (name ? name.split(" ").filter(Boolean).map(n => n[0]).join("").substring(0, 2).toUpperCase() : "FC");
 
   try {
     const [result] = await pool.query(
       "INSERT INTO faculty (name, initials, department, experience, category, image) VALUES (?, ?, ?, ?, ?, ?)",
-      [name, initials, department, experience, category, image]
+      [name, init, department, experience, cat, image]
     );
     const [newFaculty] = await pool.query("SELECT * FROM faculty WHERE id = ?", [result.insertId]);
     res.status(201).json(newFaculty[0]);
@@ -34,7 +36,9 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
 // Update faculty (Protected)
 router.put("/:id", authenticate, upload.single("image"), async (req, res) => {
   const { name, initials, department, experience, category } = req.body;
-  const updateData = [name, initials, department, experience, category];
+  const cat = category || department || "";
+  const init = initials || (name ? name.split(" ").filter(Boolean).map(n => n[0]).join("").substring(0, 2).toUpperCase() : "FC");
+  const updateData = [name, init, department, experience, cat];
   let query = "UPDATE faculty SET name = ?, initials = ?, department = ?, experience = ?, category = ?";
 
   if (req.file) {

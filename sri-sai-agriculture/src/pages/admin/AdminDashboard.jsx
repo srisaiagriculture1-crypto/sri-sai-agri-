@@ -1137,24 +1137,12 @@ export default function AdminDashboard() {
                         <input required placeholder="Dr. John Doe" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, name: e.target.value})} value={formData.name || ''} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Department</label>
-                        <input required placeholder="Agronomy" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, department: e.target.value})} value={formData.department || ''} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Experience</label>
-                        <input required placeholder="12 Years" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, experience: e.target.value})} value={formData.experience || ''} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Department / Subject</label>
+                        <input required placeholder="Agriculture / Agronomy / Science" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, department: e.target.value})} value={formData.department || ''} />
                       </div>
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
-                        <select required className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all appearance-none" onChange={e => setFormData({...formData, category: e.target.value})} value={formData.category || ''}>
-                            <option value="">Select Category</option>
-                            <option value="math">Mathematics</option>
-                            <option value="phys">Physics</option>
-                            <option value="chem">Chemistry</option>
-                            <option value="bio">Biology</option>
-                            <option value="comm">Commerce</option>
-                            <option value="lang">Languages</option>
-                        </select>
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Designation & Experience</label>
+                        <input required placeholder="12+ Years Experience · Senior Lead Faculty" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, experience: e.target.value})} value={formData.experience || ''} />
                       </div>
                     </>
                   )}
