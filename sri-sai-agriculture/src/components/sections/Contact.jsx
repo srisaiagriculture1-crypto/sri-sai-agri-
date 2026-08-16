@@ -37,16 +37,27 @@ export default function Contact() {
     if (errors[field]) setErrors((e) => { const n = { ...e }; delete n[field]; return n; });
   }
 
+  const [submitting, setSubmitting] = useState(false);
+
   async function handleSubmit() {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     
+    setSubmitting(true);
     try {
-      await axios.post("/api/enquiries", form);
+      const payload = {
+        ...form,
+        student_name: form.studentName,
+        parent_name: form.parentName
+      };
+      await axios.post("/api/enquiries", payload);
       setSubmitted(true);
     } catch (err) {
-      alert("Submission failed. Please try again.");
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || "Submission failed. Please try again.";
+      alert(`Submission Error: ${errorMsg}`);
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -119,11 +130,12 @@ export default function Contact() {
                         focus:outline-none focus:border-blue" />
                   </div>
                   <button onClick={handleSubmit}
-                    className="w-full py-[13px] bg-blue text-white border-none rounded-lg font-sora font-bold
+                    disabled={submitting}
+                    className={`w-full py-[13px] bg-blue text-white border-none rounded-lg font-sora font-bold
                       text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 mt-1
-                      transition-all duration-200 hover:bg-blue2 hover:-translate-y-[1px]">
+                      transition-all duration-200 hover:bg-blue2 hover:-translate-y-[1px] ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                    Submit Enquiry
+                    {submitting ? 'Submitting Enquiry...' : 'Submit Enquiry'}
                   </button>
                   <p className="text-center text-[0.72rem] text-muted mt-[9px] flex items-center justify-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
