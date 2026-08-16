@@ -25,7 +25,16 @@ import {
   Eye,
   EyeOff,
   Check,
-  Download
+  Download,
+  UserCheck,
+  CheckCircle2,
+  XCircle,
+  CreditCard,
+  ExternalLink,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail
 } from 'lucide-react';
 
 const API_URL = '/api';
@@ -254,6 +263,7 @@ export default function AdminDashboard() {
   };
 
   const tabs = [
+    { id: 'online-registrations', label: 'Online Registrations', icon: UserCheck },
     { id: 'students', label: 'Student Accounts', icon: Users },
     { id: 'feeNotifications', label: 'Fee Notifications', icon: Bell },
     { id: 'imports', label: 'Excel Imports', icon: FileSpreadsheet },
@@ -999,7 +1009,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex gap-3">
-              {activeTab !== 'enquiries' && activeTab !== 'staff' && activeTab !== 'feeNotifications' && (
+              {activeTab !== 'enquiries' && activeTab !== 'staff' && activeTab !== 'feeNotifications' && activeTab !== 'online-registrations' && activeTab !== 'settings' && activeTab !== 'imports' && (
                 <button 
                   onClick={() => {
                     if (viewMode === 'form' || viewMode === 'student-manage') {
@@ -2346,12 +2356,14 @@ export default function AdminDashboard() {
                              </tr>
                            );
                          })}
-                       </tbody>
-                     </table>
-                   </div>
-                 </div>
-               )}
-            </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+             </div>
+          ) : activeTab === 'online-registrations' ? (
+            <OnlineRegistrationsView onRefreshStudentCount={fetchData} />
           ) : activeTab === 'staff' ? (
             <StaffManagementView
               staffList={staffList}
@@ -3079,36 +3091,40 @@ function SettingsView({ settings, fields, onSaveSetting, onSaveFields, onDeleteF
                                  <option value="text">TEXT</option>
                                  <option value="number">NUMBER</option>
                                  <option value="date">DATE</option>
+                                 <option value="email">EMAIL</option>
+                                 <option value="select">SELECT</option>
+                                 <option value="textarea">TEXTAREA</option>
                               </select>
                            </td>
                            <td className="px-6 py-4 text-center">
                               <input 
                                 type="checkbox" 
-                                checked={field.is_required} 
+                                checked={!!field.is_required} 
                                 onChange={(e) => {
                                   const newFields = [...editingFields];
                                   newFields[idx].is_required = e.target.checked ? 1 : 0;
                                   setEditingFields(newFields);
                                 }}
-                                className="w-4 h-4 rounded border-gray-300 text-blue focus:ring-0" 
+                                className="w-4 h-4 rounded border-gray-300 text-blue focus:ring-0 cursor-pointer" 
                               />
                            </td>
                            <td className="px-6 py-4 text-center">
                               <input 
                                 type="checkbox" 
-                                checked={field.is_active} 
+                                checked={!!field.is_active} 
                                 onChange={(e) => {
                                   const newFields = [...editingFields];
                                   newFields[idx].is_active = e.target.checked ? 1 : 0;
                                   setEditingFields(newFields);
                                 }}
-                                className="w-4 h-4 rounded border-gray-300 text-green-500 focus:ring-0" 
+                                className="w-4 h-4 rounded border-gray-300 text-green-500 focus:ring-0 cursor-pointer" 
                               />
                            </td>
                            <td className="px-6 py-4 text-right">
                               <button 
                                 onClick={() => field.id ? onDeleteField(field.id) : setEditingFields(editingFields.filter((_, i) => i !== idx))}
-                                className="p-2 text-red-400 hover:text-red-600 transition-colors"
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete field"
                               >
                                  <Trash2 size={16} />
                               </button>
@@ -3116,7 +3132,7 @@ function SettingsView({ settings, fields, onSaveSetting, onSaveFields, onDeleteF
                         </tr>
                       ))}
                       {editingFields.length === 0 && (
-                        <tr><td colSpan="5" className="px-6 py-20 text-center text-gray-300 font-bold uppercase tracking-widest text-[10px]">No custom fields added yet</td></tr>
+                        <tr><td colSpan="5" className="px-6 py-20 text-center text-gray-300 font-bold uppercase tracking-widest text-[10px]">No registration fields configured</td></tr>
                       )}
                    </tbody>
                 </table>
@@ -3132,6 +3148,647 @@ function SettingsView({ settings, fields, onSaveSetting, onSaveFields, onDeleteF
              </div>
           </div>
        </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── *
+ *  OnlineRegistrationsView
+ *  Super Admin management for website online student registrations & payment proof
+ * ─────────────────────────────────────────────────────────────────────────── */
+function OnlineRegistrationsView({ onRefreshStudentCount }) {
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('All'); // 'All', 'Pending', 'Approved', 'Rejected'
+  const [search, setSearch] = useState('');
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [previewScreenshot, setPreviewScreenshot] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
+
+  const fetchRegistrations = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/online-registrations`, { withCredentials: true });
+      setRegistrations(res.data || []);
+    } catch (err) {
+      console.error("Fetch online registrations error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegistrations();
+  }, []);
+
+  const handleUpdateStatus = async (studentId, proofId, newStatus) => {
+    setProcessingId(studentId);
+    try {
+      await axios.put(`${API_URL}/admin/online-registrations/${studentId}/status`, {
+        status: newStatus,
+        proof_id: proofId
+      }, { withCredentials: true });
+      await fetchRegistrations();
+      if (selectedApp && selectedApp.id === studentId) {
+        setSelectedApp(prev => prev ? ({ ...prev, payment_status: newStatus }) : null);
+      }
+      if (onRefreshStudentCount) onRefreshStudentCount();
+    } catch (err) {
+      alert("Failed to update status: " + (err.response?.data?.message || err.message));
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteApp = async (studentId) => {
+    if (!window.confirm("Are you sure you want to delete this online registration application? This will permanently remove all student details and payment proofs.")) return;
+    try {
+      await axios.delete(`${API_URL}/admin/online-registrations/${studentId}`, { withCredentials: true });
+      if (selectedApp?.id === studentId) setSelectedApp(null);
+      await fetchRegistrations();
+      if (onRefreshStudentCount) onRefreshStudentCount();
+    } catch (err) {
+      alert("Failed to delete application: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const pendingCount = registrations.filter(r => (r.payment_status || 'Pending').toLowerCase() === 'pending').length;
+  const approvedCount = registrations.filter(r => (r.payment_status || '').toLowerCase() === 'approved').length;
+  const rejectedCount = registrations.filter(r => (r.payment_status || '').toLowerCase() === 'rejected').length;
+  const totalFees = approvedCount * 2000;
+
+  const filtered = registrations.filter(r => {
+    const status = (r.payment_status || 'Pending').toLowerCase();
+    if (filter !== 'All' && status !== filter.toLowerCase()) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const matchName = (r.student_name || '').toLowerCase().includes(q);
+      const matchEmail = (r.email || '').toLowerCase().includes(q);
+      const matchMobile = (r.mobile1 || '').includes(q) || (r.mobile2 || '').includes(q);
+      const matchCourse = (r.course_applied || '').toLowerCase().includes(q);
+      const matchDistrict = (r.district || '').toLowerCase().includes(q);
+      const matchFather = (r.father_name || '').toLowerCase().includes(q);
+      return matchName || matchEmail || matchMobile || matchCourse || matchDistrict || matchFather;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-8 animate-fadeIn">
+      {/* Top Header & Summary Stats */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <h3 className="text-2xl font-black text-ink uppercase tracking-tight">Online Registrations</h3>
+          <p className="text-xs text-muted font-bold tracking-wider mt-1">Review website student applications, registration details & payment proofs</p>
+        </div>
+        <button 
+          onClick={fetchRegistrations}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-ink rounded-2xl text-xs font-bold uppercase tracking-wider hover:bg-gray-50 shadow-sm"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin text-blue" : ""} /> Refresh List
+        </button>
+      </div>
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Applications</span>
+            <div className="p-2 bg-blue/10 text-blue rounded-xl"><Users size={18} /></div>
+          </div>
+          <p className="text-3xl font-black text-ink mt-3">{registrations.length}</p>
+          <span className="text-[10px] text-muted font-bold">From website registration portal</span>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Pending Verification</span>
+            <div className="p-2 bg-amber-50 text-amber-500 rounded-xl"><Bell size={18} /></div>
+          </div>
+          <p className="text-3xl font-black text-amber-600 mt-3">{pendingCount}</p>
+          <span className="text-[10px] text-amber-600/80 font-bold">Awaiting fee approval</span>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Approved & Enrolled</span>
+            <div className="p-2 bg-green-50 text-green-600 rounded-xl"><CheckCircle2 size={18} /></div>
+          </div>
+          <p className="text-3xl font-black text-green-600 mt-3">{approvedCount}</p>
+          <span className="text-[10px] text-green-600/80 font-bold">Payment verified</span>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Application Fees</span>
+            <div className="p-2 bg-sky text-blue rounded-xl"><CreditCard size={18} /></div>
+          </div>
+          <p className="text-3xl font-black text-ink mt-3">₹{totalFees.toLocaleString('en-IN')}</p>
+          <span className="text-[10px] text-muted font-bold">Collected from verified students</span>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          {['All', 'Pending', 'Approved', 'Rejected'].map(status => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                filter === status 
+                  ? 'bg-blue text-white shadow-lg shadow-blue/20' 
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              {status} {status === 'Pending' ? `(${pendingCount})` : status === 'Approved' ? `(${approvedCount})` : status === 'Rejected' ? `(${rejectedCount})` : `(${registrations.length})`}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full md:w-80">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search name, phone, course, district..." 
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-ink focus:outline-none focus:border-blue transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Applications Table */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/60 border-b border-gray-100">
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Applicant</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Course Applied</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Info</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Location</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Payment Proof</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-20 text-center text-gray-400 font-bold text-xs uppercase tracking-widest">
+                    No {filter !== 'All' ? filter.toLowerCase() : ''} online registration applications found.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((app, idx) => {
+                  const isPending = (app.payment_status || 'Pending').toLowerCase() === 'pending';
+                  const isApproved = (app.payment_status || '').toLowerCase() === 'approved';
+                  const isRejected = (app.payment_status || '').toLowerCase() === 'rejected';
+
+                  return (
+                    <tr key={app.id || idx} className="hover:bg-sky/20 transition-colors group">
+                      {/* Applicant Profile */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-sky flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm shrink-0">
+                            {app.photo ? (
+                              <img 
+                                src={getImageUrl(app.photo)} 
+                                alt="" 
+                                className="h-full w-full object-cover"
+                                onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/150?text=Student"; }}
+                              />
+                            ) : (
+                              <span className="text-blue font-black text-base uppercase">
+                                {app.student_name?.[0] || 'S'}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-black text-ink text-sm group-hover:text-blue transition-colors">
+                              {app.student_name || 'Anonymous Student'}
+                            </h4>
+                            <p className="text-[10px] text-gray-400 font-bold tracking-wide mt-0.5">
+                              Father: {app.father_name || 'N/A'}
+                            </p>
+                            <p className="text-[9px] text-muted font-medium">
+                              {app.created_at ? new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Course */}
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-blue/10 text-blue font-black text-[11px] rounded-lg uppercase tracking-wider block w-max mb-1">
+                          {app.course_applied || 'Ag. B.Sc.'}
+                        </span>
+                        <p className="text-[10px] text-gray-500 font-bold">
+                          {app.branch && app.branch !== 'NULL' ? app.branch : 'General'} · {app.admission_type || 'Residential'}
+                        </p>
+                      </td>
+
+                      {/* Contact */}
+                      <td className="px-6 py-4">
+                        <p className="text-xs font-bold text-ink flex items-center gap-1">
+                          <Phone size={12} className="text-gray-400" /> {app.mobile1 || 'N/A'}
+                        </p>
+                        {app.mobile2 && (
+                          <p className="text-[10px] text-gray-500 font-medium ml-4">
+                            Alt: {app.mobile2}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted truncate max-w-[180px] flex items-center gap-1 mt-0.5">
+                          <Mail size={12} className="text-gray-400 shrink-0" /> {app.email || 'N/A'}
+                        </p>
+                      </td>
+
+                      {/* Location */}
+                      <td className="px-6 py-4">
+                        <p className="text-xs font-bold text-ink">
+                          {app.village || app.district || 'N/A'}
+                        </p>
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          {app.district ? `${app.district} · ${app.pin || ''}` : ''}
+                        </p>
+                      </td>
+
+                      {/* Payment Screenshot */}
+                      <td className="px-6 py-4 text-center">
+                        {app.payment_screenshot ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              onClick={() => setPreviewScreenshot({
+                                url: getImageUrl(app.payment_screenshot),
+                                name: app.student_name,
+                                course: app.course_applied,
+                                amount: app.registration_fee_paid || '2000'
+                              })}
+                              className="relative group/thumb h-12 w-12 rounded-xl overflow-hidden border-2 border-blue/30 shadow-sm hover:scale-110 transition-transform block"
+                            >
+                              <img 
+                                src={getImageUrl(app.payment_screenshot)} 
+                                alt="Screenshot" 
+                                className="h-full w-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity text-white">
+                                <Eye size={16} />
+                              </div>
+                            </button>
+                            <span className="text-[9px] font-black text-green-600">₹{app.registration_fee_paid || '2,000'}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-300 uppercase italic">No Screenshot</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider border inline-block ${
+                          isApproved ? 'bg-green-50 text-green-700 border-green-200' :
+                          isRejected ? 'bg-red-50 text-red-600 border-red-200' :
+                          'bg-amber-50 text-amber-700 border-amber-300 animate-pulse'
+                        }`}>
+                          {isPending ? 'Pending Verification' : app.payment_status}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setSelectedApp(app)}
+                            className="p-2.5 bg-blue text-white rounded-xl hover:bg-ink transition-all shadow-md shadow-blue/20"
+                            title="View Full Application Details"
+                          >
+                            <Eye size={15} />
+                          </button>
+
+                          {isPending && (
+                            <>
+                              <button
+                                disabled={processingId === app.id}
+                                onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Approved')}
+                                className="p-2.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-200"
+                                title="Approve Payment & Confirm Registration"
+                              >
+                                <Check size={15} />
+                              </button>
+                              <button
+                                disabled={processingId === app.id}
+                                onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Rejected')}
+                                className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100"
+                                title="Reject Application"
+                              >
+                                <X size={15} />
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteApp(app.id)}
+                            className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                            title="Delete Application Record"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Full Application Details Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-[2.5rem] max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 flex flex-col my-8">
+            {/* Modal Header */}
+            <div className="p-8 bg-blue text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-5">
+                <div className="h-16 w-16 rounded-2xl bg-white/10 border-2 border-white/30 overflow-hidden flex items-center justify-center shadow-lg">
+                  {selectedApp.photo ? (
+                    <img src={getImageUrl(selectedApp.photo)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-black text-white">{selectedApp.student_name?.[0] || 'S'}</span>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-black">{selectedApp.student_name}</h3>
+                    <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      {selectedApp.course_applied || 'Ag. B.Sc.'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-sky/80 font-bold mt-1">
+                    Applied on {selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Recent'} · Status: <span className="font-black text-white">{selectedApp.payment_status || 'Pending'}</span>
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedApp(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto space-y-8 flex-1">
+              {/* Payment Proof Highlight Section */}
+              <div className="bg-[#1a6b3c]/5 border-2 border-dashed border-[#1a6b3c]/20 p-6 rounded-3xl">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-1 text-center md:text-left">
+                    <span className="text-[10px] font-black text-[#1a6b3c] uppercase tracking-widest">Registration Fee Payment</span>
+                    <p className="text-3xl font-black text-ink">₹ {selectedApp.registration_fee_paid || '2,000.00'}</p>
+                    <p className="text-xs text-muted font-bold">Transaction Type: {selectedApp.fee_type || 'Registration Fee'}</p>
+                  </div>
+
+                  {selectedApp.payment_screenshot && (
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => setPreviewScreenshot({
+                          url: getImageUrl(selectedApp.payment_screenshot),
+                          name: selectedApp.student_name,
+                          course: selectedApp.course_applied,
+                          amount: selectedApp.registration_fee_paid || '2000'
+                        })}
+                        className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all group"
+                      >
+                        <img 
+                          src={getImageUrl(selectedApp.payment_screenshot)} 
+                          alt="Screenshot Thumbnail" 
+                          className="h-14 w-14 rounded-xl object-cover border border-gray-100"
+                        />
+                        <div className="text-left pr-2">
+                          <p className="text-xs font-black text-blue group-hover:underline flex items-center gap-1">
+                            <Eye size={14} /> Click to View Full Screenshot
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-bold">PNG / JPG Proof</p>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Personal Information Grid */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <UserCheck size={16} className="text-blue" /> Personal & Academic Information
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/70 p-6 rounded-3xl border border-gray-100 text-xs">
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Father's Name</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.father_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Mother's Name</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.mother_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Date of Birth</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.dob ? new Date(selectedApp.dob).toLocaleDateString('en-IN') : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Gender</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.gender || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Course Applied</span>
+                    <p className="font-bold text-blue mt-1">{selectedApp.course_applied || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Branch / Stream</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.branch && selectedApp.branch !== 'NULL' ? selectedApp.branch : 'General'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Admission Type</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.admission_type || 'Residential'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Medium of Instruction</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.medium || 'English Medium'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Nationality</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.nationality || 'Indian'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Religion</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.religion || 'Hindu'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Enrolled Year</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.academic_enrolled_year || '2024-2025'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Reference</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.reference || 'Self'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact & Address Grid */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <MapPin size={16} className="text-blue" /> Contact & Permanent Address
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/70 p-6 rounded-3xl border border-gray-100 text-xs">
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Primary Mobile</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.mobile1 || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Alternative Mobile</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.mobile2 || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Email Address</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Door / House No</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.door_no || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Village / Town</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.village || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Mandal</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.mandal || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">District & PIN</span>
+                    <p className="font-bold text-ink mt-1">{selectedApp.district || 'N/A'} {selectedApp.pin ? `- ${selectedApp.pin}` : ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Qualifications Table */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <BookOpen size={16} className="text-blue" /> Prior Academic Qualifications
+                </h4>
+                <div className="bg-gray-50/70 rounded-3xl border border-gray-100 overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-gray-100/60 border-b border-gray-100">
+                        <th className="px-6 py-3 font-black text-gray-400 uppercase tracking-wider text-[10px]">Examination</th>
+                        <th className="px-6 py-3 font-black text-gray-400 uppercase tracking-wider text-[10px]">Board / University</th>
+                        <th className="px-6 py-3 font-black text-gray-400 uppercase tracking-wider text-[10px] text-center">Year of Passing</th>
+                        <th className="px-6 py-3 font-black text-gray-400 uppercase tracking-wider text-[10px] text-right">Percentage / CGPA</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {(selectedApp.qualifications || []).length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-6 text-center text-gray-400 font-bold text-xs italic">
+                            No academic qualifications recorded.
+                          </td>
+                        </tr>
+                      ) : (
+                        selectedApp.qualifications.map((q, qIdx) => (
+                          <tr key={qIdx}>
+                            <td className="px-6 py-3.5 font-bold text-ink">{q.examination || 'S.S.C / Inter'}</td>
+                            <td className="px-6 py-3.5 text-gray-600">{q.board_university || 'State Board'}</td>
+                            <td className="px-6 py-3.5 text-center font-bold text-ink">{q.year_of_passing || '-'}</td>
+                            <td className="px-6 py-3.5 text-right font-black text-blue">{q.percentage_cgpa || '-'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4 shrink-0">
+              <button
+                onClick={() => handleDeleteApp(selectedApp.id)}
+                className="px-6 py-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+              >
+                Delete Application
+              </button>
+
+              <div className="flex items-center gap-3">
+                {(selectedApp.payment_status || 'Pending').toLowerCase() === 'pending' ? (
+                  <>
+                    <button
+                      disabled={processingId === selectedApp.id}
+                      onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Approved')}
+                      className="px-8 py-3.5 bg-[#15803d] hover:bg-[#166534] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-green-500/20 transition-all flex items-center gap-2"
+                    >
+                      <Check size={16} /> Approve & Confirm Admission
+                    </button>
+                    <button
+                      disabled={processingId === selectedApp.id}
+                      onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Rejected')}
+                      className="px-6 py-3.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-500/20 transition-all"
+                    >
+                      Reject
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs font-bold text-gray-500 mr-2">
+                    Current Status: <strong className="uppercase text-ink">{selectedApp.payment_status}</strong>
+                  </span>
+                )}
+                <button
+                  onClick={() => setSelectedApp(null)}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Payment Screenshot Modal */}
+      {previewScreenshot && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+            <div className="p-6 bg-blue text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-sm uppercase tracking-wider">Registration Payment Screenshot</h3>
+                <p className="text-[10px] opacity-80 uppercase font-bold">{previewScreenshot.name} · ₹{previewScreenshot.amount}</p>
+              </div>
+              <button onClick={() => setPreviewScreenshot(null)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 bg-gray-900 flex flex-col items-center justify-center min-h-[350px] max-h-[70vh] overflow-auto">
+              <img 
+                src={previewScreenshot.url} 
+                alt="Payment Screenshot Full" 
+                className="max-h-[60vh] w-auto object-contain rounded-xl border border-gray-700 shadow-2xl"
+              />
+            </div>
+            <div className="p-5 bg-white border-t border-gray-100 flex items-center justify-between">
+              <a 
+                href={previewScreenshot.url} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="text-xs font-bold text-blue hover:underline flex items-center gap-1.5"
+              >
+                <ExternalLink size={14} /> Open Original in New Tab
+              </a>
+              <button
+                onClick={() => setPreviewScreenshot(null)}
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase tracking-wider"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

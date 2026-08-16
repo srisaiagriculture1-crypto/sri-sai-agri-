@@ -158,9 +158,45 @@ router.post("/settings", authenticate, async (req, res) => {
   }
 });
 
+const DEFAULT_REGISTRATION_FIELDS = [
+  { field_name: "student_name", field_label: "Student Full Name", field_type: "text", is_required: 1, is_active: 1, sort_order: 1 },
+  { field_name: "father_name", field_label: "Father's Name", field_type: "text", is_required: 1, is_active: 1, sort_order: 2 },
+  { field_name: "mother_name", field_label: "Mother's Name", field_type: "text", is_required: 0, is_active: 1, sort_order: 3 },
+  { field_name: "course_applied", field_label: "Course Applied (B.Sc / M.Sc)", field_type: "text", is_required: 1, is_active: 1, sort_order: 4 },
+  { field_name: "branch", field_label: "Branch / Specialization", field_type: "text", is_required: 1, is_active: 1, sort_order: 5 },
+  { field_name: "admission_type", field_label: "Admission Type (Residential / Day Scholar)", field_type: "text", is_required: 1, is_active: 1, sort_order: 6 },
+  { field_name: "dob", field_label: "Date of Birth", field_type: "date", is_required: 1, is_active: 1, sort_order: 7 },
+  { field_name: "gender", field_label: "Gender", field_type: "text", is_required: 1, is_active: 1, sort_order: 8 },
+  { field_name: "medium", field_label: "Medium of Instruction", field_type: "text", is_required: 1, is_active: 1, sort_order: 9 },
+  { field_name: "email", field_label: "Student Login Email", field_type: "text", is_required: 1, is_active: 1, sort_order: 10 },
+  { field_name: "mobile1", field_label: "Primary Mobile Number", field_type: "number", is_required: 1, is_active: 1, sort_order: 11 },
+  { field_name: "mobile2", field_label: "Alternative Mobile Number", field_type: "number", is_required: 0, is_active: 1, sort_order: 12 },
+  { field_name: "village", field_label: "Village / Town", field_type: "text", is_required: 1, is_active: 1, sort_order: 13 },
+  { field_name: "mandal", field_label: "Mandal", field_type: "text", is_required: 1, is_active: 1, sort_order: 14 },
+  { field_name: "district", field_label: "District", field_type: "text", is_required: 1, is_active: 1, sort_order: 15 },
+  { field_name: "pin", field_label: "PIN Code", field_type: "number", is_required: 1, is_active: 1, sort_order: 16 }
+];
+
+async function ensureDefaultRegistrationFields() {
+  try {
+    const [rows] = await pool.query("SELECT id FROM registration_fields LIMIT 1");
+    if (rows.length === 0) {
+      for (const f of DEFAULT_REGISTRATION_FIELDS) {
+        await pool.query(
+          "INSERT INTO registration_fields (field_name, field_label, field_type, is_required, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+          [f.field_name, f.field_label, f.field_type, f.is_required, f.is_active, f.sort_order]
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Default registration fields seed error:", err.message);
+  }
+}
+
 // Get registration fields (Public)
 router.get("/registration-fields", async (req, res) => {
   try {
+    await ensureDefaultRegistrationFields();
     const [rows] = await pool.query("SELECT * FROM registration_fields WHERE is_active = 1 ORDER BY sort_order ASC");
     res.json(rows);
   } catch (err) {
@@ -169,8 +205,9 @@ router.get("/registration-fields", async (req, res) => {
 });
 
 // Admin: Get all fields (including inactive)
-router.get("/admin/registration-fields", authenticate, async (req, res) => {
+router.get(["/admin/registration-fields", "/registration-fields-all"], authenticate, async (req, res) => {
   try {
+    await ensureDefaultRegistrationFields();
     const [rows] = await pool.query("SELECT * FROM registration_fields ORDER BY sort_order ASC");
     res.json(rows);
   } catch (err) {
@@ -179,35 +216,117 @@ router.get("/admin/registration-fields", authenticate, async (req, res) => {
 });
 
 // Admin: Save/Update fields
-router.post("/registration-fields", authenticate, async (req, res) => {
+router.post(["/registration-fields", "/admin/registration-fields"], authenticate, async (req, res) => {
   const { fields } = req.body;
   try {
     for (const f of fields) {
       if (f.id) {
         await pool.query(
           "UPDATE registration_fields SET field_label = ?, field_type = ?, is_required = ?, is_active = ?, sort_order = ? WHERE id = ?",
-          [f.field_label, f.field_type, f.is_required, f.is_active, f.sort_order, f.id]
+          [f.field_label, f.field_type, f.is_required ? 1 : 0, f.is_active ? 1 : 0, f.sort_order || 0, f.id]
         );
       } else {
         await pool.query(
-          "INSERT INTO registration_fields (field_name, field_label, field_type, is_required, sort_order) VALUES (?, ?, ?, ?, ?)",
-          [f.field_name, f.field_label, f.field_type, f.is_required, f.sort_order]
+          "INSERT INTO registration_fields (field_name, field_label, field_type, is_required, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+          [f.field_name || `custom_${Date.now()}`, f.field_label, f.field_type, f.is_required ? 1 : 0, f.is_active !== undefined ? (f.is_active ? 1 : 0) : 1, f.sort_order || 0]
         );
       }
     }
     res.json({ message: "Registration fields updated successfully" });
   } catch (err) {
+    console.error("Save fields error:", err);
     res.status(500).json({ message: "Failed to update fields" });
   }
 });
 
 // Admin: Delete field
-router.delete("/registration-fields/:id", authenticate, async (req, res) => {
+router.delete(["/registration-fields/:id", "/admin/registration-fields/:id"], authenticate, async (req, res) => {
   try {
     await pool.query("DELETE FROM registration_fields WHERE id = ?", [req.params.id]);
-    res.json({ message: "Field deleted" });
+    res.json({ message: "Field deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Failed to delete field" });
+  }
+});
+
+// Admin: Get all online student registrations with payment screenshots & details
+router.get("/admin/online-registrations", authenticate, async (req, res) => {
+  try {
+    const [students] = await pool.query(`
+      SELECT 
+        s.*,
+        p.id AS proof_id,
+        p.fee_type,
+        p.amount AS registration_fee_paid,
+        p.screenshot AS payment_screenshot,
+        p.status AS payment_status,
+        p.created_at AS payment_submitted_at
+      FROM students s
+      LEFT JOIN payment_proofs p ON p.id = (
+        SELECT id FROM payment_proofs 
+        WHERE student_id = s.id 
+        ORDER BY created_at DESC 
+        LIMIT 1
+      )
+      ORDER BY s.created_at DESC
+    `);
+
+    // Fetch qualifications for all returned students
+    const [quals] = await pool.query("SELECT * FROM qualifications");
+    const qualsByStudent = {};
+    quals.forEach(q => {
+      if (!qualsByStudent[q.student_id]) qualsByStudent[q.student_id] = [];
+      qualsByStudent[q.student_id].push(q);
+    });
+
+    const enriched = students.map(s => ({
+      ...s,
+      qualifications: qualsByStudent[s.id] || []
+    }));
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("Online registrations error:", err);
+    res.status(500).json({ message: "Failed to fetch online registrations" });
+  }
+});
+
+// Admin: Update registration payment status (Approved / Rejected / Pending)
+router.put("/admin/online-registrations/:id/status", authenticate, async (req, res) => {
+  const { status, proof_id } = req.body;
+  const studentId = req.params.id;
+  try {
+    if (proof_id) {
+      await pool.query("UPDATE payment_proofs SET status = ? WHERE id = ?", [status, proof_id]);
+    } else {
+      await pool.query("UPDATE payment_proofs SET status = ? WHERE student_id = ? AND fee_type = 'Registration Fee'", [status, studentId]);
+    }
+
+    if (status === 'Approved') {
+      await pool.query(
+        "UPDATE student_fees SET paid_amount = paid_amount + 2000, payment_status = 'Partial Paid' WHERE student_id = ? AND academic_year = '1st year'",
+        [studentId]
+      );
+    }
+    res.json({ message: `Registration status updated to ${status}` });
+  } catch (err) {
+    console.error("Update registration status error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Admin: Delete an online registration application
+router.delete("/admin/online-registrations/:id", authenticate, async (req, res) => {
+  const studentId = req.params.id;
+  try {
+    await pool.query("DELETE FROM payment_proofs WHERE student_id = ?", [studentId]);
+    await pool.query("DELETE FROM qualifications WHERE student_id = ?", [studentId]);
+    await pool.query("DELETE FROM student_fees WHERE student_id = ?", [studentId]);
+    await pool.query("DELETE FROM students WHERE id = ?", [studentId]);
+    res.json({ message: "Registration application deleted successfully" });
+  } catch (err) {
+    console.error("Delete registration error:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
