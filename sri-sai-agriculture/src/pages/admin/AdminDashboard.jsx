@@ -97,6 +97,12 @@ export default function AdminDashboard() {
   const [proofFilter, setProofFilter] = useState('Pending');
   const [previewProof, setPreviewProof] = useState(null);
   const [feeNoticeBanner, setFeeNoticeBanner] = useState(null);
+  
+  // Real-time notification counters across tabs
+  const [newEnquiriesCount, setNewEnquiriesCount] = useState(0);
+  const [waitingRegistrationsCount, setWaitingRegistrationsCount] = useState(0);
+  const [pendingFeeProofsCount, setPendingFeeProofsCount] = useState(0);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
 
   const calculateAcademicYear = (enrolledYearStr) => {
     if (!enrolledYearStr) return '1st Year';
@@ -403,6 +409,42 @@ export default function AdminDashboard() {
       console.error("Fetch payment proofs failed", err);
     }
   }, []);
+
+  const fetchNotificationCounts = useCallback(async () => {
+    if (!localStorage.getItem("adminToken")) return;
+    try {
+      const [enqRes, regRes, feeRes] = await Promise.allSettled([
+        axios.get(`${API_URL}/enquiries`, { withCredentials: true }),
+        axios.get(`${API_URL}/admin/online-registrations`, { withCredentials: true }),
+        axios.get(`${API_URL}/student-fees/admin/proofs`, { withCredentials: true })
+      ]);
+
+      if (enqRes.status === 'fulfilled' && Array.isArray(enqRes.value.data)) {
+        const unread = enqRes.value.data.filter(e => !e.status || e.status === 'New').length;
+        setNewEnquiriesCount(unread);
+      }
+
+      if (regRes.status === 'fulfilled' && Array.isArray(regRes.value.data)) {
+        const waiting = regRes.value.data.filter(r => !r.is_enrolled && (r.registration_status === 'Waiting List' || !r.registration_status)).length;
+        setWaitingRegistrationsCount(waiting);
+      }
+
+      if (feeRes.status === 'fulfilled' && Array.isArray(feeRes.value.data)) {
+        const pending = feeRes.value.data.filter(p => p.status === 'Pending').length;
+        setPendingFeeProofsCount(pending);
+      }
+    } catch (e) {
+      console.error("fetchNotificationCounts error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchNotificationCounts();
+      const interval = setInterval(fetchNotificationCounts, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin, fetchNotificationCounts, activeTab]);
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -919,7 +961,7 @@ export default function AdminDashboard() {
         <nav className="flex-1 p-6 space-y-2 overflow-y-auto scrollbar-hide">
           <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-4 ml-2">Navigation</p>
           {(() => {
-            const pendingCount = paymentProofs.filter(p => (p.status || '').toLowerCase() === 'pending').length;
+            const pendingProofs = pendingFeeProofsCount || paymentProofs.filter(p => (p.status || '').toLowerCase() === 'pending').length;
             return tabs.map(tab => (
               <button 
                 key={tab.id}
@@ -929,14 +971,37 @@ export default function AdminDashboard() {
                   setEditingId(null);
                   setFormData({});
                   setFile(null);
+                  setShowNotificationMenu(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 group ${activeTab === tab.id ? 'bg-blue text-white shadow-lg shadow-blue/20' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
               >
                 <tab.icon size={18} className={`${activeTab === tab.id ? 'text-white' : 'text-white/40 group-hover:text-white'} transition-colors`} />
                 <span className="flex-1 text-left">{tab.label}</span>
-                {tab.id === 'feeNotifications' && pendingCount > 0 && (
-                  <span className="px-2.5 py-0.5 text-[10px] font-black bg-red-500 text-white rounded-full animate-bounce shadow-md">
-                    {pendingCount}
+                {tab.id === 'enquiries' && newEnquiriesCount > 0 && (
+                  <span 
+                    className="px-2.5 py-0.5 text-[10px] font-black text-white rounded-full shadow-md animate-pulse"
+                    style={{ backgroundColor: '#ef4444' }}
+                    title={`${newEnquiriesCount} New Enquiries`}
+                  >
+                    {newEnquiriesCount} New
+                  </span>
+                )}
+                {tab.id === 'online-registrations' && waitingRegistrationsCount > 0 && (
+                  <span 
+                    className="px-2.5 py-0.5 text-[10px] font-black text-white rounded-full shadow-md animate-pulse"
+                    style={{ backgroundColor: '#f59e0b' }}
+                    title={`${waitingRegistrationsCount} Waiting Registrations`}
+                  >
+                    {waitingRegistrationsCount}
+                  </span>
+                )}
+                {tab.id === 'feeNotifications' && pendingProofs > 0 && (
+                  <span 
+                    className="px-2.5 py-0.5 text-[10px] font-black text-white rounded-full shadow-md animate-pulse"
+                    style={{ backgroundColor: '#ef4444' }}
+                    title={`${pendingProofs} Pending Fee Proofs`}
+                  >
+                    {pendingProofs}
                   </span>
                 )}
                 {activeTab === tab.id && <ChevronRight size={14} className="opacity-50" />}
@@ -991,10 +1056,99 @@ export default function AdminDashboard() {
                 </>
               )}
 
-              <button className="relative w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                <Bell size={18} className="text-muted" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotificationMenu(!showNotificationMenu)}
+                  className="relative w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
+                  title="Notifications Overview"
+                >
+                  <Bell size={18} className="text-muted" />
+                  {(newEnquiriesCount > 0 || waitingRegistrationsCount > 0 || pendingFeeProofsCount > 0) && (
+                    <span 
+                      className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-black text-white rounded-full border-2 border-white shadow-md animate-bounce"
+                      style={{ backgroundColor: '#ef4444', minWidth: '18px', textAlign: 'center' }}
+                    >
+                      {newEnquiriesCount + waitingRegistrationsCount + pendingFeeProofsCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotificationMenu && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50 animate-fadeIn">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 px-2">
+                      <h4 className="text-xs font-black text-ink uppercase tracking-wider flex items-center gap-1.5">
+                        <Bell size={14} className="text-blue" /> Live Notifications
+                      </h4>
+                      <span className="text-[10px] text-gray-400 font-bold">Auto-updated</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => { setActiveTab('enquiries'); setShowNotificationMenu(false); }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-50/70 transition-all text-left group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                            <PhoneCall size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-ink group-hover:text-red-600 transition-colors">Admission Enquiries</p>
+                            <p className="text-[10px] text-gray-400 font-medium">New student enquiry leads</p>
+                          </div>
+                        </div>
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-sm shrink-0"
+                          style={{ backgroundColor: newEnquiriesCount > 0 ? '#ef4444' : '#9ca3af' }}
+                        >
+                          {newEnquiriesCount} New
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => { setActiveTab('online-registrations'); setShowNotificationMenu(false); }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-amber-50/70 transition-all text-left group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                            <UserCheck size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-ink group-hover:text-amber-800 transition-colors">Online Registrations</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Applicants in Waiting List</p>
+                          </div>
+                        </div>
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-sm shrink-0"
+                          style={{ backgroundColor: waitingRegistrationsCount > 0 ? '#f59e0b' : '#9ca3af' }}
+                        >
+                          {waitingRegistrationsCount} Waiting
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => { setActiveTab('feeNotifications'); setShowNotificationMenu(false); }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-blue/10 transition-all text-left group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-sky text-blue flex items-center justify-center shrink-0">
+                            <Receipt size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-ink group-hover:text-blue transition-colors">Fee Notifications</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Payment proofs to verify</p>
+                          </div>
+                        </div>
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-sm shrink-0"
+                          style={{ backgroundColor: pendingFeeProofsCount > 0 ? '#ef4444' : '#9ca3af' }}
+                        >
+                          {pendingFeeProofsCount} Pending
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
@@ -4154,10 +4308,12 @@ function AdmissionEnquiriesView() {
                             {cleanMobile ? (
                               <a
                                 href={`tel:${cleanMobile}`}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black shadow-md shadow-green-600/20 transition-all hover:scale-105 active:scale-95"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                style={{ backgroundColor: '#15803d', color: '#ffffff', border: '1px solid #166534' }}
                                 title={`Direct Call: ${enq.mobile}`}
                               >
-                                <PhoneCall size={13} /> {enq.mobile}
+                                <PhoneCall size={13} color="#ffffff" strokeWidth={2.5} />
+                                <span style={{ color: '#ffffff', fontWeight: 900 }}>{enq.mobile || 'Call'}</span>
                               </a>
                             ) : (
                               <span className="text-xs font-bold text-gray-400">No Mobile</span>
@@ -4247,10 +4403,11 @@ function AdmissionEnquiriesView() {
                               setEditingNoteId(enq.id);
                               setTempNote(enq.notes || '');
                             }}
-                            className="p-2.5 bg-blue text-white rounded-xl hover:bg-ink transition-all shadow-md shadow-blue/20"
+                            className="p-2.5 rounded-xl transition-all shadow-md flex items-center justify-center cursor-pointer"
+                            style={{ backgroundColor: '#0f766e', color: '#ffffff' }}
                             title="View Details & Add Notes"
                           >
-                            <Eye size={15} />
+                            <Eye size={15} color="#ffffff" />
                           </button>
 
                           <button
@@ -4303,9 +4460,11 @@ function AdmissionEnquiriesView() {
                 <div className="flex items-center gap-2">
                   <a
                     href={`tel:${selectedEnquiry.mobile}`}
-                    className="flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-green-600/30 transition-all hover:scale-105"
+                    className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all hover:scale-105 cursor-pointer"
+                    style={{ backgroundColor: '#15803d', color: '#ffffff', border: '1px solid #166534' }}
                   >
-                    <PhoneCall size={16} /> Call Now
+                    <PhoneCall size={16} color="#ffffff" strokeWidth={2.5} />
+                    <span style={{ color: '#ffffff', fontWeight: 900 }}>Call Now</span>
                   </a>
                   <a
                     href={`https://wa.me/91${(selectedEnquiry.mobile || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${selectedEnquiry.student_name || ''}, greetings from Sri Sai Institute of Agriculture Sciences!`)}`}
