@@ -16,13 +16,15 @@ router.get("/", async (req, res) => {
 
 // Create rank (Protected)
 router.post("/", authenticate, upload.single("image"), async (req, res) => {
-  const { studentName, hallTicketNumber, rank, exam, stream, year } = req.body;
+  const { studentName, student_name, name, hallTicketNumber, hall_ticket_number, rank, exam, stream, year } = req.body;
+  const sName = studentName || student_name || name || "";
+  const htNo = hallTicketNumber || hall_ticket_number || "";
   const image = req.file ? req.file.path.replace(/\\/g, "/") : "";
 
   try {
     const [result] = await pool.query(
       "INSERT INTO ranks (student_name, hall_ticket_number, rank, exam, stream, year, image) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [studentName, hallTicketNumber, rank, exam, stream, parseInt(year) || new Date().getFullYear(), image]
+      [sName, htNo, rank, exam, stream || "Agri Science", parseInt(year) || new Date().getFullYear(), image]
     );
     const [newRank] = await pool.query("SELECT * FROM ranks WHERE id = ?", [result.insertId]);
     res.status(201).json(newRank[0]);
@@ -43,8 +45,11 @@ router.delete("/:id", authenticate, async (req, res) => {
 
 // Update rank (Protected)
 router.put("/:id", authenticate, upload.single("image"), async (req, res) => {
-  const { studentName, hallTicketNumber, rank, exam, stream, year } = req.body;
-  const updateData = [studentName, hallTicketNumber, rank, exam, stream, year];
+  const { studentName, student_name, name, hallTicketNumber, hall_ticket_number, rank, exam, stream, year } = req.body;
+  const sName = studentName || student_name || name || "";
+  const htNo = hallTicketNumber || hall_ticket_number || "";
+  const yr = parseInt(year) || new Date().getFullYear();
+  const updateData = [sName, htNo, rank, exam, stream || "Agri Science", yr];
   let query = "UPDATE ranks SET student_name = ?, hall_ticket_number = ?, rank = ?, exam = ?, stream = ?, year = ?";
 
   if (req.file) {

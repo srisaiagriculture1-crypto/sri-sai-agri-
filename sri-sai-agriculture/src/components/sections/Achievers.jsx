@@ -4,8 +4,7 @@ import { GraduationCap, Stethoscope, Award } from "lucide-react";
 import { achieverGroups as staticGroups } from "../../data/achievers";
 import Reveal from "../ui/Reveal";
 import SectionHeader from "../ui/SectionHeader";
-
-const API_URL = '';
+import { getImageUrl } from "../../utils/imageUrl";
 
 const groupIcons = {
   jee:  GraduationCap,
@@ -20,9 +19,10 @@ function AchieverCard({ item, color }) {
       {/* Avatar */}
       {item.image ? (
         <img 
-          src={item.image.startsWith('http') ? item.image : `${API_URL}${item.image}`} 
+          src={getImageUrl(item.image)} 
           alt={item.name} 
           className="w-14 h-14 rounded-full object-cover flex-shrink-0" 
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
       ) : (
         <div className="w-14 h-14 rounded-full flex items-center justify-center

@@ -593,10 +593,19 @@ export default function AdminDashboard() {
     });
 
     if (activeTab === 'ranks' || activeTab === 'testimonials') {
-      if (formData.studentName) payload.append('student_name', formData.studentName);
+      const sName = formData.name || formData.studentName || formData.student_name || '';
+      if (sName) {
+        payload.set('student_name', sName);
+        payload.set('studentName', sName);
+        payload.set('name', sName);
+      }
     }
-    if (activeTab === 'ranks' && formData.hallTicketNumber) {
-      payload.append('hall_ticket_number', formData.hallTicketNumber);
+    if (activeTab === 'ranks') {
+      const htNo = formData.hallTicketNumber || formData.hall_ticket_number || '';
+      if (htNo) {
+        payload.set('hall_ticket_number', htNo);
+        payload.set('hallTicketNumber', htNo);
+      }
     }
 
     if (activeTab === 'courses' && formData.details) {
@@ -661,11 +670,16 @@ export default function AdminDashboard() {
     }
 
     if (activeTab === 'testimonials' || activeTab === 'ranks') {
-       mapped.studentName = item.student_name || item.studentName;
+       const sName = item.student_name || item.studentName || item.name || '';
+       mapped.name = sName;
+       mapped.studentName = sName;
+       mapped.student_name = sName;
     }
     
     if (activeTab === 'ranks') {
-       mapped.hallTicketNumber = item.hall_ticket_number || item.hallTicketNumber;
+       const htNo = item.hall_ticket_number || item.hallTicketNumber || '';
+       mapped.hallTicketNumber = htNo;
+       mapped.hall_ticket_number = htNo;
     }
     
     if (activeTab === 'courses' && item.details) {
@@ -1193,19 +1207,23 @@ export default function AdminDashboard() {
                     <>
                       <div className="space-y-2">
                         <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Student Name</label>
-                        <input required placeholder="Name" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, name: e.target.value})} value={formData.name || ''} />
+                        <input required placeholder="e.g. R. Rahul" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, name: e.target.value, studentName: e.target.value, student_name: e.target.value})} value={formData.name || formData.studentName || formData.student_name || ''} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Hall Ticket No</label>
-                        <input required placeholder="123456" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, hallTicketNumber: e.target.value})} value={formData.hallTicketNumber || ''} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Hall Ticket / Roll No</label>
+                        <input required placeholder="e.g. AG2491" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, hallTicketNumber: e.target.value, hall_ticket_number: e.target.value})} value={formData.hallTicketNumber || formData.hall_ticket_number || ''} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Rank</label>
-                        <input required placeholder="State 1st" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, rank: e.target.value})} value={formData.rank || ''} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Rank / Achievement</label>
+                        <input required placeholder="e.g. Distinction / Top Researcher / State 1st" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, rank: e.target.value})} value={formData.rank || ''} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Exam Name</label>
-                        <input required placeholder="EAPCET" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, exam: e.target.value})} value={formData.exam || ''} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Program / Exam Name</label>
+                        <input required placeholder="e.g. B.Sc Agri / M.Sc Agri" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, exam: e.target.value})} value={formData.exam || ''} />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Stream / Specialization</label>
+                        <input placeholder="e.g. Agri Science / Biological Sci" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, stream: e.target.value})} value={formData.stream || ''} />
                       </div>
                     </>
                   )}
