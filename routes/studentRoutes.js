@@ -327,7 +327,7 @@ router.post('/reset-password/:token', async (req, res) => {
   }
 });
 
-// ─── SEND FEE REMINDER EMAIL TO ALL STUDENTS ────────────────────────────────
+// ─── SEND FEE REMINDER EMAIL TO STUDENTS WITH DUES ─────────────────────────
 router.post("/send-fee-reminder", authenticate, async (req, res) => {
   try {
     // Fetch all students with their email
@@ -336,7 +336,7 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
     );
 
     if (!students.length) {
-      return res.status(404).json({ message: "No students found." });
+      return res.status(404).json({ message: "No students found in database." });
     }
 
     // Fetch all fees
@@ -351,12 +351,13 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
       feesByStudent[f.student_id].push(f);
     });
 
-    let sent = 0;
-    let failed = 0;
+    const studentsToEmail = [];
 
     for (const student of students) {
-      const recipientEmail = student.email;
-      if (!recipientEmail || recipientEmail === "null") { failed++; continue; }
+      const recipientEmail = student.email || student.email_personal;
+      if (!recipientEmail || recipientEmail === "null" || !recipientEmail.includes("@")) {
+        continue;
+      }
 
       const studentFees = feesByStudent[student.id] || [];
 
@@ -396,12 +397,10 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
   <title>Fee Payment Reminder</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f8fafc; font-family: 'Segoe UI', Arial, sans-serif;">
-
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc; padding: 40px 0;">
     <tr>
       <td align="center">
         <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a4731 0%, #15803d 100%); padding: 36px 40px; text-align: center;">
@@ -422,7 +421,6 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
           <!-- Body -->
           <tr>
             <td style="padding: 36px 40px;">
-
               <p style="margin: 0 0 6px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Dear Student,</p>
               <h2 style="margin: 0 0 24px; color: #0f172a; font-size: 22px; font-weight: 800;">${student.student_name}</h2>
 
@@ -505,22 +503,47 @@ router.post("/send-fee-reminder", authenticate, async (req, res) => {
               <p style="margin: 0; color: #475569; font-size: 11px;">This is an automated communication. Please do not reply to this email.</p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
   </table>
-
 </body>
 </html>`;
 
       const subject = `[Fee Reminder] Outstanding Dues — ${student.student_name} | Sri Sai Institute`;
-      const ok = await sendEmail(recipientEmail, subject, html);
-      if (ok) sent++; else failed++;
+      studentsToEmail.push({ email: recipientEmail, subject, html });
+    }
+
+    if (studentsToEmail.length === 0) {
+      return res.json({
+        message: "No students with valid email addresses found.",
+        sent: 0,
+        failed: 0,
+        total: students.length
+      });
+    }
+
+    // Process concurrently in parallel batches of 8 for ultra-fast dispatch
+    const BATCH_SIZE = 8;
+    let sent = 0;
+    let failed = 0;
+
+    for (let i = 0; i < studentsToEmail.length; i += BATCH_SIZE) {
+      const batch = studentsToEmail.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(item => sendEmail(item.email, item.subject, item.html))
+      );
+      results.forEach(res => {
+        if (res.status === 'fulfilled' && res.value) {
+          sent++;
+        } else {
+          failed++;
+        }
+      });
     }
 
     res.json({
-      message: `Fee reminder emails dispatched successfully.`,
+      message: `Fee reminder emails processed successfully.`,
       sent,
       failed,
       total: students.length

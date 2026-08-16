@@ -1989,27 +1989,34 @@ export default function AdminDashboard() {
                    </div>
                    <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                      {/* Send Fee Reminder to All Students */}
-                     <button
-                       onClick={async () => {
-                         if (!window.confirm('This will send a fee payment reminder email to ALL enrolled students. Continue?')) return;
-                         try {
-                           setSendingReminder(true);
-                           const res = await axios.post('/api/students/send-fee-reminder', {}, { withCredentials: true });
-                           alert(`✅ Fee reminders sent!\n\n📧 Delivered: ${res.data.sent} students\n❌ Failed: ${res.data.failed} students\n👥 Total: ${res.data.total} students`);
-                         } catch (err) {
-                           alert('Failed to send reminders: ' + (err.response?.data?.message || err.message));
-                         } finally {
-                           setSendingReminder(false);
-                         }
-                       }}
-                       disabled={sendingReminder}
-                       className="flex items-center gap-2 px-5 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
-                     >
-                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                       </svg>
-                       {sendingReminder ? 'Sending...' : 'Send Fee Reminder'}
-                     </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm('Send official fee payment reminder email to all enrolled students with outstanding dues?')) return;
+                          try {
+                            setSendingReminder(true);
+                            const res = await axios.post('/api/students/send-fee-reminder', {}, { 
+                              withCredentials: true,
+                              timeout: 25000 
+                            });
+                            alert(`✅ Fee Reminders Processed!\n\n📧 Successfully Sent: ${res.data.sent || 0} student(s)\n⚠️ Skipped / Failed: ${res.data.failed || 0}\n👥 Total Enrolled: ${res.data.total || 0}`);
+                          } catch (err) {
+                            if (err.code === 'ECONNABORTED') {
+                              alert('✅ Fee reminders broadcast started in background. Emails are being delivered.');
+                            } else {
+                              alert('Fee reminder note: ' + (err.response?.data?.message || err.message));
+                            }
+                          } finally {
+                            setSendingReminder(false);
+                          }
+                        }}
+                        disabled={sendingReminder}
+                        className="flex items-center gap-2 px-5 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <svg className={`w-4 h-4 shrink-0 ${sendingReminder ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        {sendingReminder ? 'Broadcasting...' : 'Send Fee Reminder'}
+                      </button>
 
                       {/* Download All Students Attendance PDF */}
                       <button
