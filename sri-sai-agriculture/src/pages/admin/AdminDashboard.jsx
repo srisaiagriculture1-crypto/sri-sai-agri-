@@ -3526,20 +3526,23 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setSelectedApp(app)}
-                            className="p-2.5 bg-blue text-white rounded-xl hover:bg-ink transition-all shadow-md shadow-blue/20"
+                            className="p-2.5 rounded-xl transition-all shadow-md flex items-center justify-center"
+                            style={{ backgroundColor: '#0f766e', color: '#ffffff' }}
                             title="View Full Application Details"
                           >
-                            <Eye size={15} />
+                            <Eye size={16} color="#ffffff" />
                           </button>
 
                           {!isEnrolled && (
                             <button
                               disabled={processingId === app.id}
                               onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Confirmed')}
-                              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md shadow-green-600/20 transition-all flex items-center gap-1.5"
+                              className="px-3.5 py-2 rounded-xl font-black text-[11px] uppercase tracking-wider shadow-lg transition-all flex items-center gap-1.5 active:scale-95"
+                              style={{ backgroundColor: '#15803d', color: '#ffffff', border: '1px solid #166534' }}
                               title="Confirm Admission & Add into Student Accounts"
                             >
-                              <Check size={13} /> Enroll
+                              <Check size={14} color="#ffffff" strokeWidth={3} />
+                              <span style={{ color: '#ffffff', fontWeight: 900 }}>Confirm &amp; Enroll</span>
                             </button>
                           )}
 
@@ -3583,7 +3586,7 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                     </span>
                   </div>
                   <p className="text-xs text-sky/80 font-bold mt-1">
-                    Applied on {selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Recent'} · Status: <span className="font-black text-white">{selectedApp.payment_status || 'Pending'}</span>
+                    Applied on {selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Recent'} · Status: <span className="font-black text-white">{selectedApp.registration_status || 'Waiting List'}</span>
                   </p>
                 </div>
               </div>
@@ -3664,9 +3667,11 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                   <button
                     disabled={processingId === selectedApp.id}
                     onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Confirmed')}
-                    className="px-5 py-2 bg-green-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-green-700 shadow-md shadow-green-600/20 transition-all flex items-center gap-1.5"
+                    className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    style={{ backgroundColor: '#15803d', color: '#ffffff', border: '1px solid #166534' }}
                   >
-                    <Check size={14} /> Confirm Admission & Add to Accounts
+                    <Check size={15} color="#ffffff" strokeWidth={3} />
+                    <span style={{ color: '#ffffff', fontWeight: 900 }}>Confirm Admission &amp; Add to Accounts</span>
                   </button>
                   <button
                     disabled={processingId === selectedApp.id}
