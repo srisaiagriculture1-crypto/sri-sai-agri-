@@ -1,97 +1,83 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { GraduationCap, Stethoscope, Award } from "lucide-react";
 import { achieverGroups as staticGroups } from "../../data/achievers";
 import Reveal from "../ui/Reveal";
 import SectionHeader from "../ui/SectionHeader";
 import { getImageUrl } from "../../utils/imageUrl";
 
-const groupIcons = {
-  jee:  GraduationCap,
-  neet: Stethoscope,
-  intermediate: Award,
-};
+const fallbackItems = staticGroups.flatMap(g => g.items.map(item => ({
+  ...item,
+  category: g.title
+})));
 
-function AchieverCard({ item, color }) {
+function AchieverCard({ item }) {
+  const initials = item.initials || (item.name ? item.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'AG');
+
   return (
-    <div className="flex items-center gap-4 px-5 py-4 rounded-2xl flex-shrink-0 mx-2"
-      style={{ background: color.bg, border: `1px solid ${color.border}`, minWidth: 240 }}>
+    <div 
+      className="flex items-center gap-4 px-6 py-5 rounded-2xl flex-shrink-0 mx-3 bg-white/[0.08] hover:bg-white/[0.13] border border-white/15 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-300 group hover:-translate-y-1"
+      style={{ minWidth: 300, maxWidth: 380 }}
+    >
       {/* Avatar */}
-      {item.image ? (
-        <img 
-          src={getImageUrl(item.image)} 
-          alt={item.name} 
-          className="w-14 h-14 rounded-full object-cover flex-shrink-0" 
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
-      ) : (
-        <div className="w-14 h-14 rounded-full flex items-center justify-center
-          font-lora font-bold text-[1rem] flex-shrink-0 text-white"
-          style={{ background: "rgba(255,255,255,.12)", border: "1.5px solid rgba(255,255,255,.18)" }}>
-          {item.initials}
+      <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-white/10 border-2 border-white/20 shadow-inner flex items-center justify-center relative">
+        {item.image ? (
+          <img 
+            src={getImageUrl(item.image)} 
+            alt={item.name || item.student_name || item.studentName} 
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        ) : null}
+        <div className="absolute inset-0 flex items-center justify-center font-lora font-bold text-[1.15rem] text-white -z-0">
+          {initials}
         </div>
-      )}
-      <div className="min-w-0">
-        <div className="font-bold text-[0.95rem] text-white truncate">{item.name}</div>
-        <div className="text-[0.75rem] font-bold px-2 py-[2px] rounded mt-[4px] inline-block truncate"
-          style={{ color: color.tag, background: color.tagBg }}>
-          {item.place}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="font-bold text-[1.05rem] text-white truncate group-hover:text-emerald-300 transition-colors">
+          {item.name || item.student_name || item.studentName}
+        </div>
+        <div className="text-[0.78rem] font-bold px-3 py-1 rounded-lg mt-1.5 inline-block truncate bg-emerald-400/15 border border-emerald-400/30 text-emerald-300 shadow-sm">
+          {item.place || item.achievement || item.category || 'Agricultural Scholar'}
         </div>
       </div>
     </div>
   );
 }
 
-function MarqueeRow({ group, reverse }) {
-  const Icon = groupIcons[group.id] || Award;
-  const items = [...(group.items || []), ...(group.items || []), ...(group.items || []), ...(group.items || [])];
+function StreamRow({ items, reverse }) {
+  // Ensure enough items to smoothly loop continuously across any screen size
+  let streamItems = items;
+  while (streamItems.length < 10 && streamItems.length > 0) {
+    streamItems = [...streamItems, ...items];
+  }
+  const duplicated = [...streamItems, ...streamItems];
 
   return (
-    <div className="mb-6">
-      {/* Row label */}
-      <div className="flex items-center gap-2 mb-2 px-7">
-        <Icon size={13} className="text-white/40 flex-shrink-0" />
-        <span className="text-[0.68rem] font-bold text-white/40 uppercase tracking-[.1em]">
-          {group.title}
-        </span>
-      </div>
-      {/* Full-width track */}
-      <div className="overflow-hidden marquee-track w-full">
-        <div className={`flex ${reverse ? "marquee-right" : "marquee-left"}`}
-          style={{ width: "max-content" }}>
-          {items.map((item, i) => (
-            <AchieverCard key={i} item={item} color={group.color} />
-          ))}
-        </div>
+    <div className="overflow-hidden marquee-track w-full py-2">
+      <div 
+        className={`flex ${reverse ? "marquee-right" : "marquee-left"}`}
+        style={{ width: "max-content" }}
+      >
+        {duplicated.map((item, i) => (
+          <AchieverCard key={`${item.id || item.name || 'item'}-${i}`} item={item} />
+        ))}
       </div>
     </div>
   );
 }
 
 export default function Achievers() {
-  const [groups, setGroups] = useState(staticGroups);
+  const [stories, setStories] = useState(fallbackItems);
 
   useEffect(() => {
     const fetchStories = async () => {
       try {
         const res = await axios.get("/api/stories");
-        
         if (res.data && res.data.length > 0) {
-          // Dynamic group generation from scratch
-          const dynamicGroupsSet = new Set(res.data.map(s => s.category));
-          const newGroups = [];
-          
-          dynamicGroupsSet.forEach(catId => {
-              newGroups.push({
-                 id: catId,
-                 title: `${catId.toUpperCase()} Results`,
-                 color: { bg: "rgba(255,255,255,.07)", border: "rgba(255,255,255,.12)", tag: "#fff", tagBg: "rgba(255,255,255,.1)" },
-                 items: res.data.filter(story => story.category === catId)
-              });
-          });
-          setGroups(newGroups);
+          setStories(res.data);
         } else {
-          setGroups(staticGroups); // Only use fallbacks if DB is empty
+          setStories(fallbackItems);
         }
       } catch (err) {
         console.error("Error fetching stories:", err);
@@ -100,23 +86,26 @@ export default function Achievers() {
     fetchStories();
   }, []);
 
+  // Split all stories evenly into exactly 2 horizontal streaming rows
+  const row1 = stories.filter((_, i) => i % 2 === 0);
+  const row2 = stories.filter((_, i) => i % 2 !== 0);
+
   return (
     <section id="achievers" className="py-[78px] bg-ink relative overflow-hidden ach-section-bg">
       <div className="max-w-site mx-auto px-7 relative">
-        <Reveal className="mb-11">
+        <Reveal className="mb-12">
           <SectionHeader
             label="④ Hall of Fame"
             title={`Top Ranking <em>Achievers</em>`}
-            subtitle="Celebrating our toppers who secured admissions in India's most prestigious institutions over the years."
+            subtitle="Celebrating our toppers who secured admissions and career milestones across agricultural sciences."
             light
           />
         </Reveal>
       </div>
 
-      <div className="w-full">
-        {groups.map((group, i) => (
-          <MarqueeRow key={group.id || `gr-${i}`} group={group} reverse={i % 2 !== 0} />
-        ))}
+      <div className="w-full space-y-4">
+        <StreamRow items={row1.length > 0 ? row1 : fallbackItems} reverse={false} />
+        <StreamRow items={row2.length > 0 ? row2 : (row1.length > 0 ? row1 : fallbackItems)} reverse={true} />
       </div>
     </section>
   );

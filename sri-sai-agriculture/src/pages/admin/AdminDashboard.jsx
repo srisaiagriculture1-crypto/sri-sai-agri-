@@ -2699,7 +2699,9 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-bold text-ink">{item.student_name || item.studentName || item.name || item.title || item.label || item.tag}</span>
-                                  <span className="text-[9px] uppercase font-black text-gray-300 mt-1 tracking-widest">{item.id || item._id}</span>
+                                  <span className="text-[10px] font-bold text-gray-400 mt-0.5 tracking-wide">
+                                    #{idx + 1} {item.hall_ticket_number || item.hallTicketNumber ? `· ${item.hall_ticket_number || item.hallTicketNumber}` : ''}
+                                  </span>
                                 </div>
                               </div>
                             </td>
