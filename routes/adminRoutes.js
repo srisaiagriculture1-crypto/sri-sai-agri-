@@ -250,7 +250,7 @@ router.delete(["/registration-fields/:id", "/admin/registration-fields/:id"], au
 });
 
 // Admin: Get all online student registrations with payment screenshots & details
-router.get("/admin/online-registrations", authenticate, async (req, res) => {
+router.get(["/online-registrations", "/admin/online-registrations"], authenticate, async (req, res) => {
   try {
     const [students] = await pool.query(`
       SELECT 
@@ -285,7 +285,7 @@ router.get("/admin/online-registrations", authenticate, async (req, res) => {
 
     const enriched = students.map(s => ({
       ...s,
-      registration_status: s.registration_status || 'Waiting List',
+      registration_status: s.registration_status || (s.is_enrolled ? 'Enrolled' : 'Waiting List'),
       qualifications: qualsByStudent[s.id] || []
     }));
 
@@ -297,7 +297,7 @@ router.get("/admin/online-registrations", authenticate, async (req, res) => {
 });
 
 // Admin: Update registration status (Waiting List, Under Review, Contacted, Rejected, or Confirm Admission)
-router.put("/admin/online-registrations/:id/status", authenticate, async (req, res) => {
+router.put(["/online-registrations/:id/status", "/admin/online-registrations/:id/status"], authenticate, async (req, res) => {
   const { status, registration_status, is_enrolled, roll_no, proof_id } = req.body;
   const studentId = req.params.id;
   try {
@@ -341,7 +341,7 @@ router.put("/admin/online-registrations/:id/status", authenticate, async (req, r
 });
 
 // Admin: Delete an online registration application
-router.delete("/admin/online-registrations/:id", authenticate, async (req, res) => {
+router.delete(["/online-registrations/:id", "/admin/online-registrations/:id"], authenticate, async (req, res) => {
   const studentId = req.params.id;
   try {
     await pool.query("DELETE FROM payment_proofs WHERE student_id = ?", [studentId]);
