@@ -34,7 +34,8 @@ import {
   Calendar,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  Clock
 } from 'lucide-react';
 
 const API_URL = '/api';
@@ -3189,15 +3190,35 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
   }, []);
 
   const handleUpdateStatus = async (studentId, proofId, newStatus) => {
+    if (newStatus === 'Confirmed' || newStatus === 'Enrolled') {
+      const confirmEnroll = window.confirm(
+        "CONFIRM STUDENT ADMISSION?\n\n" +
+        "Has management spoken to this student and confirmed their admission?\n\n" +
+        "- This will APPROVE their registration payment (Rs. 2,000).\n" +
+        "- This will officially ENROLL the student into 'Student Accounts'.\n\n" +
+        "Click OK to Confirm and Enroll:"
+      );
+      if (!confirmEnroll) return;
+    }
+
     setProcessingId(studentId);
     try {
-      await axios.put(`${API_URL}/admin/online-registrations/${studentId}/status`, {
-        status: newStatus,
+      const res = await axios.put(`${API_URL}/admin/online-registrations/${studentId}/status`, {
+        registration_status: newStatus === 'Enrolled' ? 'Confirmed' : newStatus,
+        status: (newStatus === 'Confirmed' || newStatus === 'Enrolled') ? 'Approved' : (newStatus === 'Rejected' ? 'Rejected' : 'Pending'),
+        is_enrolled: (newStatus === 'Confirmed' || newStatus === 'Enrolled') ? 1 : 0,
         proof_id: proofId
       }, { withCredentials: true });
+      
+      alert(res.data.message || `Status updated to ${newStatus}`);
       await fetchRegistrations();
       if (selectedApp && selectedApp.id === studentId) {
-        setSelectedApp(prev => prev ? ({ ...prev, payment_status: newStatus }) : null);
+        setSelectedApp(prev => prev ? ({ 
+          ...prev, 
+          registration_status: newStatus, 
+          is_enrolled: (newStatus === 'Confirmed' || newStatus === 'Enrolled') ? 1 : 0,
+          payment_status: (newStatus === 'Confirmed' || newStatus === 'Enrolled') ? 'Approved' : (newStatus === 'Rejected' ? 'Rejected' : 'Pending')
+        }) : null);
       }
       if (onRefreshStudentCount) onRefreshStudentCount();
     } catch (err) {
@@ -3219,14 +3240,19 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
     }
   };
 
-  const pendingCount = registrations.filter(r => (r.payment_status || 'Pending').toLowerCase() === 'pending').length;
-  const approvedCount = registrations.filter(r => (r.payment_status || '').toLowerCase() === 'approved').length;
-  const rejectedCount = registrations.filter(r => (r.payment_status || '').toLowerCase() === 'rejected').length;
-  const totalFees = approvedCount * 2000;
+  const waitingListCount = registrations.filter(r => (r.registration_status || 'Waiting List') === 'Waiting List' && !r.is_enrolled).length;
+  const underReviewCount = registrations.filter(r => (r.registration_status || '') === 'Under Review').length;
+  const enrolledCount = registrations.filter(r => r.is_enrolled || (r.registration_status || '') === 'Enrolled' || (r.registration_status || '') === 'Confirmed').length;
+  const rejectedCount = registrations.filter(r => (r.registration_status || '').toLowerCase() === 'rejected').length;
+  const totalFees = enrolledCount * 2000;
 
   const filtered = registrations.filter(r => {
-    const status = (r.payment_status || 'Pending').toLowerCase();
-    if (filter !== 'All' && status !== filter.toLowerCase()) return false;
+    const regStatus = (r.registration_status || (r.is_enrolled ? 'Enrolled' : 'Waiting List'));
+    if (filter === 'Waiting List' && (regStatus !== 'Waiting List' || r.is_enrolled)) return false;
+    if (filter === 'Under Review' && regStatus !== 'Under Review') return false;
+    if (filter === 'Enrolled' && (!r.is_enrolled && regStatus !== 'Enrolled' && regStatus !== 'Confirmed')) return false;
+    if (filter === 'Rejected' && regStatus.toLowerCase() !== 'rejected') return false;
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const matchName = (r.student_name || '').toLowerCase().includes(q);
@@ -3245,8 +3271,10 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
       {/* Top Header & Summary Stats */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <h3 className="text-2xl font-black text-ink uppercase tracking-tight">Online Registrations</h3>
-          <p className="text-xs text-muted font-bold tracking-wider mt-1">Review website student applications, registration details & payment proofs</p>
+          <h3 className="text-2xl font-black text-ink uppercase tracking-tight">Online Registrations & Admissions</h3>
+          <p className="text-xs text-muted font-bold tracking-wider mt-1">
+            Applicants stay in the <span className="text-amber-600 font-extrabold">Waiting List</span> until management speaks with them and explicitly confirms their admission.
+          </p>
         </div>
         <button 
           onClick={fetchRegistrations}
@@ -3260,55 +3288,61 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Applications</span>
-            <div className="p-2 bg-blue/10 text-blue rounded-xl"><Users size={18} /></div>
+            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Waiting List</span>
+            <div className="p-2 bg-amber-50 text-amber-500 rounded-xl"><Clock size={18} /></div>
           </div>
-          <p className="text-3xl font-black text-ink mt-3">{registrations.length}</p>
-          <span className="text-[10px] text-muted font-bold">From website registration portal</span>
+          <p className="text-3xl font-black text-amber-600 mt-3">{waitingListCount}</p>
+          <span className="text-[10px] text-amber-600/80 font-bold">Registered · In Waiting Pool</span>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Pending Verification</span>
-            <div className="p-2 bg-amber-50 text-amber-500 rounded-xl"><Bell size={18} /></div>
+            <span className="text-[10px] font-black text-blue uppercase tracking-widest">In Discussion</span>
+            <div className="p-2 bg-blue/10 text-blue rounded-xl"><Phone size={18} /></div>
           </div>
-          <p className="text-3xl font-black text-amber-600 mt-3">{pendingCount}</p>
-          <span className="text-[10px] text-amber-600/80 font-bold">Awaiting fee approval</span>
+          <p className="text-3xl font-black text-blue mt-3">{underReviewCount}</p>
+          <span className="text-[10px] text-blue/80 font-bold">Calling / Under Review</span>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Approved & Enrolled</span>
+            <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Confirmed Admissions</span>
             <div className="p-2 bg-green-50 text-green-600 rounded-xl"><CheckCircle2 size={18} /></div>
           </div>
-          <p className="text-3xl font-black text-green-600 mt-3">{approvedCount}</p>
-          <span className="text-[10px] text-green-600/80 font-bold">Payment verified</span>
+          <p className="text-3xl font-black text-green-600 mt-3">{enrolledCount}</p>
+          <span className="text-[10px] text-green-600/80 font-bold">Enrolled in Student Accounts</span>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Application Fees</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Confirmed Fees</span>
             <div className="p-2 bg-sky text-blue rounded-xl"><CreditCard size={18} /></div>
           </div>
-          <p className="text-3xl font-black text-ink mt-3">₹{totalFees.toLocaleString('en-IN')}</p>
-          <span className="text-[10px] text-muted font-bold">Collected from verified students</span>
+          <p className="text-3xl font-black text-ink mt-3">Rs. {totalFees.toLocaleString('en-IN')}</p>
+          <span className="text-[10px] text-muted font-bold">Rs. 2,000 / enrolled student</span>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 flex-wrap">
-          {['All', 'Pending', 'Approved', 'Rejected'].map(status => (
+          {[
+            { key: 'All', label: 'All Applications', count: registrations.length },
+            { key: 'Waiting List', label: 'Waiting List', count: waitingListCount },
+            { key: 'Under Review', label: 'Under Review', count: underReviewCount },
+            { key: 'Enrolled', label: 'Enrolled in Accounts', count: enrolledCount },
+            { key: 'Rejected', label: 'Rejected / Cancelled', count: rejectedCount }
+          ].map(tab => (
             <button
-              key={status}
-              onClick={() => setFilter(status)}
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                filter === status 
+                filter === tab.key 
                   ? 'bg-blue text-white shadow-lg shadow-blue/20' 
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
-              {status} {status === 'Pending' ? `(${pendingCount})` : status === 'Approved' ? `(${approvedCount})` : status === 'Rejected' ? `(${rejectedCount})` : `(${registrations.length})`}
+              {tab.label} ({tab.count})
             </button>
           ))}
         </div>
@@ -3349,9 +3383,11 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                 </tr>
               ) : (
                 filtered.map((app, idx) => {
-                  const isPending = (app.payment_status || 'Pending').toLowerCase() === 'pending';
-                  const isApproved = (app.payment_status || '').toLowerCase() === 'approved';
-                  const isRejected = (app.payment_status || '').toLowerCase() === 'rejected';
+                  const regStatus = app.registration_status || (app.is_enrolled ? 'Enrolled' : 'Waiting List');
+                  const isEnrolled = app.is_enrolled || regStatus === 'Enrolled' || regStatus === 'Confirmed';
+                  const isUnderReview = regStatus === 'Under Review';
+                  const isRejected = regStatus === 'Rejected';
+                  const isWaitingList = !isEnrolled && !isUnderReview && !isRejected;
 
                   return (
                     <tr key={app.id || idx} className="hover:bg-sky/20 transition-colors group">
@@ -3443,22 +3479,39 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                                 <Eye size={16} />
                               </div>
                             </button>
-                            <span className="text-[9px] font-black text-green-600">₹{app.registration_fee_paid || '2,000'}</span>
+                            <span className="text-[9px] font-black text-green-600">Rs. {app.registration_fee_paid || '2,000'}</span>
                           </div>
                         ) : (
                           <span className="text-[10px] font-bold text-gray-300 uppercase italic">No Screenshot</span>
                         )}
                       </td>
 
-                      {/* Status */}
+                      {/* Status Dropdown / Badge */}
                       <td className="px-6 py-4 text-center">
-                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider border inline-block ${
-                          isApproved ? 'bg-green-50 text-green-700 border-green-200' :
-                          isRejected ? 'bg-red-50 text-red-600 border-red-200' :
-                          'bg-amber-50 text-amber-700 border-amber-300 animate-pulse'
-                        }`}>
-                          {isPending ? 'Pending Verification' : app.payment_status}
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <select
+                            disabled={processingId === app.id}
+                            value={isEnrolled ? 'Confirmed' : regStatus}
+                            onChange={(e) => handleUpdateStatus(app.id, app.proof_id, e.target.value)}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border cursor-pointer focus:outline-none transition-all shadow-sm ${
+                              isEnrolled ? 'bg-green-50 text-green-700 border-green-300' :
+                              isUnderReview ? 'bg-blue/10 text-blue border-blue/30' :
+                              isRejected ? 'bg-red-50 text-red-600 border-red-200' :
+                              'bg-amber-50 text-amber-800 border-amber-300'
+                            }`}
+                          >
+                            <option value="Waiting List">Waiting List</option>
+                            <option value="Under Review">Under Review (Calling)</option>
+                            <option value="Confirmed">Confirm Admission (Add to Accounts)</option>
+                            <option value="Rejected">Rejected / Cancelled</option>
+                          </select>
+                          {isEnrolled && (
+                            <span className="text-[9px] font-bold text-green-600">In Student Accounts</span>
+                          )}
+                          {isWaitingList && (
+                            <span className="text-[9px] text-amber-700 font-bold">Not in Student Accounts</span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -3472,25 +3525,15 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                             <Eye size={15} />
                           </button>
 
-                          {isPending && (
-                            <>
-                              <button
-                                disabled={processingId === app.id}
-                                onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Approved')}
-                                className="p-2.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-200"
-                                title="Approve Payment & Confirm Registration"
-                              >
-                                <Check size={15} />
-                              </button>
-                              <button
-                                disabled={processingId === app.id}
-                                onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Rejected')}
-                                className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100"
-                                title="Reject Application"
-                              >
-                                <X size={15} />
-                              </button>
-                            </>
+                          {!isEnrolled && (
+                            <button
+                              disabled={processingId === app.id}
+                              onClick={() => handleUpdateStatus(app.id, app.proof_id, 'Confirmed')}
+                              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md shadow-green-600/20 transition-all flex items-center gap-1.5"
+                              title="Confirm Admission & Add into Student Accounts"
+                            >
+                              <Check size={13} /> Enroll
+                            </button>
                           )}
 
                           <button
@@ -3578,6 +3621,53 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Admission Decision Card */}
+              <div className="bg-amber-50/60 border border-amber-200 p-6 rounded-3xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-2">
+                    <Clock size={16} /> Admission Lifecycle Decision
+                  </h4>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    selectedApp.is_enrolled ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {selectedApp.is_enrolled ? 'Enrolled in Student Accounts' : 'In Waiting Pool'}
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  Students register online and pay registration fee first. If they confirm their decision to study at Sri Sai Institute, click <strong>"Confirm Admission & Add to Student Accounts"</strong>. Otherwise, keep them in <strong>"Waiting List"</strong> or <strong>"Under Review"</strong>.
+                </p>
+                <div className="flex items-center gap-3 flex-wrap pt-2">
+                  <button
+                    disabled={processingId === selectedApp.id}
+                    onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Waiting List')}
+                    className="px-4 py-2 bg-white border border-amber-300 text-amber-800 rounded-xl text-xs font-bold hover:bg-amber-100 transition-all"
+                  >
+                    Move to Waiting List
+                  </button>
+                  <button
+                    disabled={processingId === selectedApp.id}
+                    onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Under Review')}
+                    className="px-4 py-2 bg-white border border-blue/30 text-blue rounded-xl text-xs font-bold hover:bg-blue/10 transition-all"
+                  >
+                    Mark Under Review (Calling)
+                  </button>
+                  <button
+                    disabled={processingId === selectedApp.id}
+                    onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Confirmed')}
+                    className="px-5 py-2 bg-green-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-green-700 shadow-md shadow-green-600/20 transition-all flex items-center gap-1.5"
+                  >
+                    <Check size={14} /> Confirm Admission & Add to Accounts
+                  </button>
+                  <button
+                    disabled={processingId === selectedApp.id}
+                    onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Rejected')}
+                    className="px-4 py-2 bg-white border border-red-200 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-all"
+                  >
+                    Cancel Application
+                  </button>
                 </div>
               </div>
 
@@ -3723,28 +3813,9 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
               </button>
 
               <div className="flex items-center gap-3">
-                {(selectedApp.payment_status || 'Pending').toLowerCase() === 'pending' ? (
-                  <>
-                    <button
-                      disabled={processingId === selectedApp.id}
-                      onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Approved')}
-                      className="px-8 py-3.5 bg-[#15803d] hover:bg-[#166534] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-green-500/20 transition-all flex items-center gap-2"
-                    >
-                      <Check size={16} /> Approve & Confirm Admission
-                    </button>
-                    <button
-                      disabled={processingId === selectedApp.id}
-                      onClick={() => handleUpdateStatus(selectedApp.id, selectedApp.proof_id, 'Rejected')}
-                      className="px-6 py-3.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-red-500/20 transition-all"
-                    >
-                      Reject
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-xs font-bold text-gray-500 mr-2">
-                    Current Status: <strong className="uppercase text-ink">{selectedApp.payment_status}</strong>
-                  </span>
-                )}
+                <span className="text-xs font-bold text-gray-500 mr-2">
+                  Status: <strong className="uppercase text-ink">{selectedApp.registration_status || (selectedApp.is_enrolled ? 'Enrolled' : 'Waiting List')}</strong>
+                </span>
                 <button
                   onClick={() => setSelectedApp(null)}
                   className="px-6 py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
@@ -3764,7 +3835,7 @@ function OnlineRegistrationsView({ onRefreshStudentCount }) {
             <div className="p-6 bg-blue text-white flex items-center justify-between">
               <div>
                 <h3 className="font-black text-sm uppercase tracking-wider">Registration Payment Screenshot</h3>
-                <p className="text-[10px] opacity-80 uppercase font-bold">{previewScreenshot.name} · ₹{previewScreenshot.amount}</p>
+                <p className="text-[10px] opacity-80 uppercase font-bold">{previewScreenshot.name} · Rs. {previewScreenshot.amount}</p>
               </div>
               <button onClick={() => setPreviewScreenshot(null)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
                 <X size={20} />

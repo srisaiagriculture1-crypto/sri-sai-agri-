@@ -28,7 +28,7 @@ router.post("/register", upload.single("photo"), async (req, res) => {
     const authCredential = password || roll_no || email || "SriSai@123";
     const hashedPassword = await bcrypt.hash(authCredential, 10);
 
-    // 1. Insert Student
+    // 1. Insert Student as an Applicant (Waiting List)
     const [result] = await pool.query(
       `INSERT INTO students (
         email, password, student_name, father_name, mother_name,
@@ -36,8 +36,9 @@ router.post("/register", upload.single("photo"), async (req, res) => {
         course_applied, medium, nationality, religion,
         door_no, village, mandal, pin, district,
         mobile1, mobile2, residence_phone, email_personal, reference,
-        photo, roll_no, current_year, academic_enrolled_year
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        photo, roll_no, current_year, academic_enrolled_year,
+        is_enrolled, registration_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'Waiting List')`,
       [
         email, hashedPassword, student_name, father_name, mother_name,
         branch, inter_type, dob || null, gender, admission_type,
@@ -150,12 +151,23 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// Get All Students (Admin Only)
+// Get All Confirmed Enrolled Students (Admin Only - Student Accounts Tab)
 router.get("/admin/list", authenticate, async (req, res) => {
   try {
-    console.log("🔍 Admin requesting student list...");
-    const [rows] = await pool.query("SELECT id, roll_no, email, student_name, father_name, mother_name, branch, inter_type, dob, gender, admission_type, course_applied, medium, nationality, religion, door_no, village, mandal, pin, district, mobile1, mobile2, residence_phone, email_personal, reference, photo, current_year, academic_enrolled_year, created_at FROM students ORDER BY created_at DESC");
-    console.log(`✅ Found ${rows.length} students in DB.`);
+    console.log("🔍 Admin requesting enrolled student list...");
+    const [rows] = await pool.query(`
+      SELECT 
+        id, roll_no, email, student_name, father_name, mother_name, branch, inter_type, 
+        dob, gender, admission_type, course_applied, medium, nationality, religion, 
+        door_no, village, mandal, pin, district, mobile1, mobile2, residence_phone, 
+        email_personal, reference, photo, current_year, academic_enrolled_year, 
+        is_enrolled, registration_status, created_at 
+      FROM students 
+      WHERE (is_enrolled = 1 OR is_enrolled IS NULL OR excel_import_id IS NOT NULL OR (roll_no IS NOT NULL AND roll_no != ''))
+        AND (registration_status IS NULL OR registration_status NOT IN ('Waiting List', 'Under Review', 'Contacted', 'Rejected'))
+      ORDER BY created_at DESC
+    `);
+    console.log(`✅ Found ${rows.length} enrolled students in DB.`);
     res.json(rows);
   } catch (err) {
     console.error("❌ Admin student list error:", err.message);

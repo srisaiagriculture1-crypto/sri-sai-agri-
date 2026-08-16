@@ -98,6 +98,7 @@ router.get("/admin/proofs", authenticate, async (req, res) => {
       `SELECT p.*, s.student_name, s.roll_no, s.course_applied, s.branch, s.mobile1, s.email
        FROM payment_proofs p
        LEFT JOIN students s ON p.student_id = s.id
+       WHERE LOWER(COALESCE(p.fee_type, '')) NOT LIKE '%registration%'
        ORDER BY p.created_at DESC`
     );
     res.json(rows);

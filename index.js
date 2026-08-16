@@ -269,6 +269,8 @@ try {
         )
       `);
       try { await pool.query(`ALTER TABLE students ADD COLUMN excel_import_id INT DEFAULT NULL`); } catch(e) {}
+      try { await pool.query(`ALTER TABLE students ADD COLUMN is_enrolled TINYINT(1) DEFAULT 1`); } catch(e) {}
+      try { await pool.query(`ALTER TABLE students ADD COLUMN registration_status VARCHAR(50) DEFAULT 'Enrolled'`); } catch(e) {}
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS staff_attendance (

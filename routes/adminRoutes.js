@@ -268,6 +268,10 @@ router.get("/admin/online-registrations", authenticate, async (req, res) => {
         ORDER BY created_at DESC 
         LIMIT 1
       )
+      WHERE s.excel_import_id IS NULL 
+         OR s.is_enrolled = 0 
+         OR s.registration_status IN ('Waiting List', 'Under Review', 'Contacted', 'Confirmed', 'Rejected')
+         OR p.id IS NOT NULL
       ORDER BY s.created_at DESC
     `);
 
@@ -281,6 +285,7 @@ router.get("/admin/online-registrations", authenticate, async (req, res) => {
 
     const enriched = students.map(s => ({
       ...s,
+      registration_status: s.registration_status || 'Waiting List',
       qualifications: qualsByStudent[s.id] || []
     }));
 
@@ -291,24 +296,44 @@ router.get("/admin/online-registrations", authenticate, async (req, res) => {
   }
 });
 
-// Admin: Update registration payment status (Approved / Rejected / Pending)
+// Admin: Update registration status (Waiting List, Under Review, Contacted, Rejected, or Confirm Admission)
 router.put("/admin/online-registrations/:id/status", authenticate, async (req, res) => {
-  const { status, proof_id } = req.body;
+  const { status, registration_status, is_enrolled, roll_no, proof_id } = req.body;
   const studentId = req.params.id;
   try {
-    if (proof_id) {
-      await pool.query("UPDATE payment_proofs SET status = ? WHERE id = ?", [status, proof_id]);
-    } else {
-      await pool.query("UPDATE payment_proofs SET status = ? WHERE student_id = ? AND fee_type = 'Registration Fee'", [status, studentId]);
-    }
+    const newRegStatus = registration_status || status;
 
-    if (status === 'Approved') {
+    if (newRegStatus === 'Confirmed' || newRegStatus === 'Enrolled' || is_enrolled === 1 || is_enrolled === true) {
+      // Confirmed by management: officially enroll student into Student Accounts
+      await pool.query(
+        "UPDATE students SET is_enrolled = 1, registration_status = 'Enrolled' WHERE id = ?",
+        [studentId]
+      );
+      if (roll_no) {
+        await pool.query("UPDATE students SET roll_no = ? WHERE id = ?", [roll_no, studentId]);
+      }
+      if (proof_id) {
+        await pool.query("UPDATE payment_proofs SET status = 'Approved' WHERE id = ?", [proof_id]);
+      } else {
+        await pool.query("UPDATE payment_proofs SET status = 'Approved' WHERE student_id = ? AND fee_type = 'Registration Fee'", [studentId]);
+      }
       await pool.query(
         "UPDATE student_fees SET paid_amount = paid_amount + 2000, payment_status = 'Partial Paid' WHERE student_id = ? AND academic_year = '1st year'",
         [studentId]
       );
+      return res.json({ message: "Admission confirmed! Student added to Student Accounts.", is_enrolled: 1, registration_status: 'Enrolled' });
+    } else {
+      // Keep or move to Waiting List / Under Review / Contacted / Rejected
+      await pool.query(
+        "UPDATE students SET is_enrolled = 0, registration_status = ? WHERE id = ?",
+        [newRegStatus, studentId]
+      );
+      if (proof_id) {
+        const paymentState = newRegStatus === 'Rejected' ? 'Rejected' : 'Pending';
+        await pool.query("UPDATE payment_proofs SET status = ? WHERE id = ?", [paymentState, proof_id]);
+      }
+      return res.json({ message: `Student registration status set to ${newRegStatus}.`, is_enrolled: 0, registration_status: newRegStatus });
     }
-    res.json({ message: `Registration status updated to ${status}` });
   } catch (err) {
     console.error("Update registration status error:", err);
     res.status(500).json({ message: err.message });
