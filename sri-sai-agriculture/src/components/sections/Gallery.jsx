@@ -38,6 +38,13 @@ const FALLBACK_ITEMS = [
   { image: "/trip-photos/trip-4.png", sub_label: "Educational Trip", label: "Team Outing" },
 ].map((item, idx) => ({ ...item, id: `fallback-${idx}` }));
 
+const isVideoMedia = (item) => {
+  if (!item) return false;
+  if (item.type && item.type.toLowerCase() === 'video') return true;
+  const url = (item.image || item.photo || '').toLowerCase();
+  return url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.endsWith('.ogg') || url.endsWith('.mkv');
+};
+
 export default function Gallery() {
   const [items, setItems] = useState(FALLBACK_ITEMS);
   const [loading, setLoading] = useState(true);
@@ -48,17 +55,13 @@ export default function Gallery() {
 
   useEffect(() => {
     const fetchGallery = async () => {
-      console.log("🔍 Fetching gallery from:", `${API_URL}/gallery`);
       try {
-        const res = await axios.get(`${API_URL}/gallery`);
+        const res = await axios.get("/api/gallery");
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          console.log("✅ Gallery loaded from DB:", res.data.length, "items");
           setItems(res.data);
-        } else {
-          console.log("ℹ️ Database gallery is empty, staying with fallback.");
         }
       } catch (err) {
-        console.error("❌ Gallery fetch failed, using fallback:", err.message);
+        console.error("Gallery fetch failed, using fallback:", err.message);
       } finally {
         setLoading(false);
       }
@@ -77,6 +80,7 @@ export default function Gallery() {
         {/* Bento Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-flow-row-dense gap-4 md:gap-6">
           {items.map((item, i) => {
+            const isVideo = isVideoMedia(item);
             let spanClass = "col-span-1 row-span-1 h-[250px]";
             // Bento logic for first few items to keep it interesting
             if (i % 10 === 0) spanClass = "lg:col-span-2 lg:row-span-2 h-[350px] lg:h-[520px]";
@@ -84,15 +88,16 @@ export default function Gallery() {
 
             return (
               <Reveal key={item.id || i} delay={(i % 5) * 0.05}
-                className={`rounded-2xl overflow-hidden relative group cursor-pointer border border-ink/5 shadow-md ${spanClass}`}
+                className={`rounded-2xl overflow-hidden relative group cursor-pointer border border-ink/5 shadow-md ${spanClass} bg-black/5`}
                 onClick={() => setSelectedImage(item)}
               >
-                {item.type === 'video' && (
-                  <div className="absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-sm text-white p-2 rounded-full border border-white/20">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                {isVideo && (
+                  <div className="absolute top-3.5 right-3.5 z-20 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/20 text-[11px] font-bold flex items-center gap-1.5 shadow-lg">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>VIDEO</span>
                   </div>
                 )}
-                {item.type === 'video' ? (
+                {isVideo ? (
                   <video 
                     src={getImageUrl(item.image)} 
                     className="w-full h-full object-cover" 
@@ -100,24 +105,26 @@ export default function Gallery() {
                     loop
                     playsInline
                     autoPlay
+                    preload="metadata"
                   />
                 ) : (
                   <img 
                     src={getImageUrl(item.image)} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                    alt={item.label} 
+                    alt={item.label || "Gallery media"} 
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb228cc?q=80&w=800'; }}
                   />
                 )}
                 
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
-                   <div className="absolute bottom-6 left-6 right-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 z-10 flex flex-col justify-end p-6">
+                   <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                       <p className="text-white font-bold text-lg leading-tight mb-1">{item.label}</p>
                       <p className="text-white/70 text-xs font-medium uppercase tracking-widest">{item.sub_label}</p>
                    </div>
                 </div>
 
-                <div className="absolute inset-4 border border-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="absolute inset-4 border border-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
               </Reveal>
             );
           })}
@@ -141,12 +148,13 @@ export default function Gallery() {
             className="relative max-w-5xl w-full flex flex-col items-center bg-transparent gap-4"
             onClick={e => e.stopPropagation()}
           >
-            {selectedImage.type === 'video' ? (
+            {isVideoMedia(selectedImage) ? (
               <video 
                 src={getImageUrl(selectedImage.image)} 
                 controls 
                 autoPlay 
-                className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl animate-scale-up bg-black"
+                playsInline
+                className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl animate-scale-up bg-black border border-white/10"
               />
             ) : (
               <img 

@@ -164,9 +164,16 @@ export default function ActivitiesPage() {
   );
 }
 
+const isVideoItem = (d) => {
+  if (!d) return false;
+  if (d.type && d.type.toLowerCase() === 'video') return true;
+  const s = (d.image || d.photo || '').toLowerCase();
+  return s.endsWith('.mp4') || s.endsWith('.webm') || s.endsWith('.mov') || s.endsWith('.ogg') || s.endsWith('.mkv');
+};
+
 /* ─────────────────────────────────────────────────────────────────────────── *
  *  DynamicMediaGrid
- *  Fetches images (and inline videos) for a given category from the API.
+ *  Fetches DB images for `category` (e.g. "internship", "field-visit", "event", "trip").
  *  Falls back to static file paths when the DB has nothing for that category.
  * ─────────────────────────────────────────────────────────────────────────── */
 function DynamicMediaGrid({ category, fallbackImages = [], openModal, cols = 4 }) {
@@ -177,7 +184,7 @@ function DynamicMediaGrid({ category, fallbackImages = [], openModal, cols = 4 }
       .then(r => r.json())
       .then(data => {
         const filtered = Array.isArray(data)
-          ? data.filter(d => d.category === category)
+          ? data.filter(d => (d.category || '').toLowerCase().includes(category.toLowerCase()) && !isVideoItem(d))
           : [];
         setItems(filtered);
       })
@@ -197,16 +204,13 @@ function DynamicMediaGrid({ category, fallbackImages = [], openModal, cols = 4 }
     );
   }
 
-  // Only show images (videos handled separately)
-  const imageItems = items.filter(d => (d.type || 'image') === 'image');
-
   const mediaItems =
-    imageItems.length > 0
-      ? imageItems.map(item => ({
-          src: item.image?.startsWith('http') ? item.image : `/${item.image?.replace(/^\//, '')}`,
+    items.length > 0
+      ? items.map(item => ({
+          src: getImageUrl(item.image),
           label: item.label,
         }))
-      : fallbackImages.map(src => ({ src, label: '' }));
+      : fallbackImages.map(src => ({ src: getImageUrl(src), label: '' }));
 
   return (
     <div className={`grid ${colClass} gap-4`}>
@@ -220,6 +224,7 @@ function DynamicMediaGrid({ category, fallbackImages = [], openModal, cols = 4 }
             alt={media.label || `${category} photo`}
             className="w-full h-full aspect-square object-cover object-center cursor-pointer"
             onClick={() => openModal(media.src)}
+            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb228cc?q=80&w=800'; }}
           />
           {media.label && (
             <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs font-bold px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity truncate">
@@ -245,7 +250,7 @@ function DynamicVideoSection({ category, fallbackSrc, inline = false, className 
       .then(r => r.json())
       .then(data => {
         const filtered = Array.isArray(data)
-          ? data.filter(d => d.category === category && d.type === 'video')
+          ? data.filter(d => (d.category || '').toLowerCase().includes(category.toLowerCase()) && isVideoItem(d))
           : [];
         setVideos(filtered);
       })
@@ -263,7 +268,7 @@ function DynamicVideoSection({ category, fallbackSrc, inline = false, className 
     return (
       <div className={`space-y-4 ${className}`}>
         {videos.map((v, i) => {
-          const src = v.image?.startsWith('http') ? v.image : `/${v.image?.replace(/^\//, '')}`;
+          const src = getImageUrl(v.image);
           return (
             <div key={i} className={wrapClass}>
               <video

@@ -26,11 +26,19 @@ router.get("/", async (req, res) => {
 router.post("/", authenticate, upload.single("image"), async (req, res) => {
   const { label, sub_label, category, type } = req.body;
   const image = req.file ? req.file.path.replace(/\\/g, "/") : "";
+  let mediaType = type;
+  if (!mediaType || mediaType === 'image') {
+    if (req.file && (req.file.mimetype.startsWith('video') || /\.(mp4|webm|mov|mkv|ogg)$/i.test(req.file.originalname))) {
+      mediaType = 'video';
+    } else {
+      mediaType = 'image';
+    }
+  }
 
   try {
     const [result] = await pool.query(
       "INSERT INTO gallery (image, label, sub_label, category, type) VALUES (?, ?, ?, ?, ?)",
-      [image, label, sub_label, category || 'general', type || 'image']
+      [image, label, sub_label, category || 'general', mediaType]
     );
     const [newItem] = await pool.query("SELECT * FROM gallery WHERE id = ?", [result.insertId]);
     res.status(201).json(newItem[0]);
@@ -43,10 +51,14 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
 router.put("/:id", authenticate, upload.single("image"), async (req, res) => {
   const { label, sub_label, category, type } = req.body;
   const image = req.file ? req.file.path.replace(/\\/g, "/") : undefined;
+  let mediaType = type;
+  if (req.file && (req.file.mimetype.startsWith('video') || /\.(mp4|webm|mov|mkv|ogg)$/i.test(req.file.originalname))) {
+    mediaType = 'video';
+  }
 
   try {
     let query = "UPDATE gallery SET label = ?, sub_label = ?, category = ?, type = ?";
-    let params = [label, sub_label, category, type];
+    let params = [label, sub_label, category, mediaType || 'image'];
 
     if (image) {
       query += ", image = ?";

@@ -1518,14 +1518,23 @@ export default function AdminDashboard() {
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-bold text-ink">{file ? file.name : (formData.existing_image ? 'Replace Current Media' : 'Upload Media Asset')}</p>
-                          <p className="text-xs text-muted mt-1">Recommended size: 800x600px. Max 1MB.</p>
+                          <p className="text-sm font-bold text-ink">{file ? file.name : (formData.existing_image ? 'Replace Current Media' : (activeTab === 'gallery' ? 'Upload Photo or Video Asset' : 'Upload Media Asset'))}</p>
+                          <p className="text-xs text-muted mt-1">{activeTab === 'gallery' ? 'Supports JPG, PNG, WEBP, MP4, WEBM (up to 50MB)' : 'Recommended size: 800x600px. Max 5MB.'}</p>
                         </div>
                         <input 
                           type="file" 
-                          accept="image/*"
+                          accept={activeTab === 'gallery' ? "image/*,video/*,.mp4,.mov,.webm,.mkv" : "image/*"}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                          onChange={e => setFile(e.target.files[0])} 
+                          onChange={e => {
+                            const selected = e.target.files[0];
+                            if (selected) {
+                              setFile(selected);
+                              if (activeTab === 'gallery') {
+                                const isVid = selected.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(selected.name);
+                                setFormData(prev => ({ ...prev, type: isVid ? 'video' : 'image' }));
+                              }
+                            }
+                          }} 
                         />
                       </div>
                   )}
@@ -2677,10 +2686,19 @@ export default function AdminDashboard() {
                           <div className="flex items-center">
                                 <div className="h-14 w-14 rounded-2xl bg-gray-100 overflow-hidden mr-5 border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-500">
                                   {item.image || item.photo ? (
-                                    (item.type === 'video' || (typeof (item.image || item.photo) === 'string' && (item.image || item.photo).toLowerCase().endsWith('.mp4'))) ? (
-                                      <div className="h-full w-full flex items-center justify-center bg-sky/30 text-blue">
-                                        <div className="p-2 bg-white rounded-full shadow-sm">
-                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    (item.type === 'video' || (typeof (item.image || item.photo) === 'string' && /\.(mp4|webm|mov|mkv|ogg)$/i.test(item.image || item.photo))) ? (
+                                      <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">
+                                        <video 
+                                          src={getImageUrl(item.image || item.photo)} 
+                                          className="h-full w-full object-cover opacity-80" 
+                                          muted 
+                                          playsInline 
+                                          preload="metadata"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+                                          <div className="p-1.5 bg-black/60 backdrop-blur-sm rounded-full">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                          </div>
                                         </div>
                                       </div>
                                     ) : (
