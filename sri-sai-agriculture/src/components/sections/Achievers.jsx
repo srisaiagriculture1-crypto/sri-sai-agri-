@@ -74,7 +74,7 @@ export default function Achievers() {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/stories`);
+        const res = await axios.get("/api/stories");
         
         if (res.data && res.data.length > 0) {
           // Dynamic group generation from scratch
