@@ -273,6 +273,24 @@ try {
       try { await pool.query(`ALTER TABLE students ADD COLUMN registration_status VARCHAR(50) DEFAULT 'Enrolled'`); } catch(e) {}
 
       await pool.query(`
+        CREATE TABLE IF NOT EXISTS enquiries (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          student_name VARCHAR(255),
+          parent_name VARCHAR(255),
+          mobile VARCHAR(20),
+          email VARCHAR(255),
+          stream VARCHAR(100),
+          batch VARCHAR(100),
+          message TEXT,
+          status VARCHAR(50) DEFAULT 'New',
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      try { await pool.query(`ALTER TABLE enquiries ADD COLUMN status VARCHAR(50) DEFAULT 'New'`); } catch(e) {}
+      try { await pool.query(`ALTER TABLE enquiries ADD COLUMN notes TEXT`); } catch(e) {}
+
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS staff_attendance (
           id INT AUTO_INCREMENT PRIMARY KEY,
           staff_id INT NOT NULL,
