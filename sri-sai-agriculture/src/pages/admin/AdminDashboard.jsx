@@ -704,7 +704,7 @@ export default function AdminDashboard() {
       let url = editingId ? `${API_URL}${endpoint}/${editingId}` : `${API_URL}${endpoint}`;
       
       if (activeTab === 'students' && !editingId) {
-        url = `${API_URL}/students/register`;
+        url = `${API_URL}/students/admin/create`;
       }
 
       const res = await axios({
@@ -717,6 +717,8 @@ export default function AdminDashboard() {
 
       if (activeTab === 'students' && !editingId && res.data.studentId) {
         await axios.put(`${API_URL}/student-fees/admin/update/${res.data.studentId}`, { fees: studentFees }, { withCredentials: true });
+        fetchStudents();
+        fetchNotificationCounts();
       }
 
       setFormData({});
@@ -724,7 +726,7 @@ export default function AdminDashboard() {
       setEditingId(null);
       setViewMode('list');
       setRefresh(r => r + 1);
-      alert(editingId ? 'Successfully updated' : 'Successfully added');
+      alert(editingId ? 'Successfully updated' : 'Student account created and directly added to Student Accounts!');
     } catch (err) {
       console.error("Action error:", err);
       alert(err.response?.data?.message || 'Operation failed');

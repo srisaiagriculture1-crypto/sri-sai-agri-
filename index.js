@@ -318,6 +318,13 @@ try {
         )
       `);
 
+      // Migration for students table
+      try {
+        await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS registration_source VARCHAR(50) DEFAULT 'online'`);
+      } catch(e) {
+        try { await pool.query(`ALTER TABLE students ADD COLUMN registration_source VARCHAR(50) DEFAULT 'online'`); } catch(err) {}
+      }
+
       // Migration for category-wise student_fees fields
       const feeCols = [
         "total_fee DECIMAL(10,2) DEFAULT 0",

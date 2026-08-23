@@ -77,6 +77,90 @@ router.post("/register", upload.single("photo"), async (req, res) => {
   }
 });
 
+// Admin: Create Student Account Directly (Enrolled immediately into Student Accounts)
+router.post("/admin/create", authenticate, upload.single("photo"), async (req, res) => {
+  const { 
+    email, password, student_name, father_name, mother_name, 
+    branch, inter_type, dob, gender, admission_type, 
+    course_applied, medium, nationality, religion,
+    door_no, village, mandal, pin, district,
+    mobile1, mobile2, residence_phone, email_personal, reference,
+    qualifications, roll_no, current_year, academic_enrolled_year
+  } = req.body;
+
+  let photo = req.file ? req.file.path.replace(/\\/g, "/") : "";
+  const uploadIdx = photo.indexOf("uploads/");
+  if (uploadIdx !== -1) {
+    photo = photo.substring(uploadIdx);
+  }
+
+  try {
+    const authCredential = password || roll_no || email || "SriSai@123";
+    const hashedPassword = await bcrypt.hash(authCredential, 10);
+
+    // Format DOB for MySQL
+    let formattedDob = dob || null;
+    if (formattedDob && typeof formattedDob === 'string' && formattedDob.includes('-')) {
+      const parts = formattedDob.split('-');
+      if (parts.length === 3 && parts[2].length === 4) {
+        formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+
+    // 1. Directly Insert Student as Officially Enrolled (is_enrolled = 1, registration_status = 'Enrolled', registration_source = 'admin')
+    const [result] = await pool.query(
+      `INSERT INTO students (
+        email, password, student_name, father_name, mother_name,
+        branch, inter_type, dob, gender, admission_type,
+        course_applied, medium, nationality, religion,
+        door_no, village, mandal, pin, district,
+        mobile1, mobile2, residence_phone, email_personal, reference,
+        photo, roll_no, current_year, academic_enrolled_year,
+        is_enrolled, registration_status, registration_source
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'Enrolled', 'admin')`,
+      [
+        email, hashedPassword, student_name, father_name, mother_name,
+        branch, inter_type, formattedDob, gender, admission_type,
+        course_applied, medium, nationality, religion,
+        door_no, village, mandal, pin, district,
+        mobile1, mobile2, residence_phone, email_personal, reference,
+        photo, roll_no, current_year || '1st year', academic_enrolled_year
+      ]
+    );
+
+    const studentId = result.insertId;
+
+    // 2. Insert Qualifications if provided
+    if (qualifications) {
+      try {
+        const quals = typeof qualifications === 'string' ? JSON.parse(qualifications) : qualifications;
+        if (Array.isArray(quals)) {
+          for (const q of quals) {
+            await pool.query(
+              "INSERT INTO qualifications (student_id, examination, board_university, year_of_passing, percentage_cgpa) VALUES (?, ?, ?, ?, ?)",
+              [studentId, q.examination, q.board_university, q.year_of_passing, q.percentage_cgpa]
+            );
+          }
+        }
+      } catch(e) {}
+    }
+
+    // 3. Initialize Fees
+    const years = ["1st year", "2nd year", "3rd year", "4th year"];
+    for (const year of years) {
+      await pool.query(
+        "INSERT INTO student_fees (student_id, academic_year) VALUES (?, ?)",
+        [studentId, year]
+      );
+    }
+
+    res.status(201).json({ message: "Student account created successfully and directly enrolled", studentId });
+  } catch (err) {
+    console.error("Admin create student error:", err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Student Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;

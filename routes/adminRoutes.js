@@ -268,10 +268,10 @@ router.get(["/online-registrations", "/admin/online-registrations"], authenticat
         ORDER BY created_at DESC 
         LIMIT 1
       )
-      WHERE s.excel_import_id IS NULL 
-         OR s.is_enrolled = 0 
-         OR s.registration_status IN ('Waiting List', 'Under Review', 'Contacted', 'Confirmed', 'Rejected')
-         OR p.id IS NOT NULL
+      WHERE (s.registration_source = 'online' OR s.registration_source IS NULL)
+        AND (COALESCE(s.registration_source, '') != 'admin')
+        AND (s.excel_import_id IS NULL)
+        AND (s.is_enrolled = 0 OR p.id IS NOT NULL OR s.registration_status IN ('Waiting List', 'Under Review', 'Contacted', 'Rejected'))
       ORDER BY s.created_at DESC
     `);
 
