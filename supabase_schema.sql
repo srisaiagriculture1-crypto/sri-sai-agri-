@@ -71,3 +71,17 @@ CREATE TABLE IF NOT EXISTS subjects (
   subject_code TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Board of Directors table
+CREATE TABLE IF NOT EXISTS directors (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  position TEXT NOT NULL,
+  qualification TEXT,
+  experience TEXT,
+  message TEXT,
+  image TEXT,
+  order_num INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+

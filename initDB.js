@@ -196,6 +196,19 @@ async function initDB() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
             )
+        `,
+        directors: `
+            CREATE TABLE IF NOT EXISTS directors (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                position VARCHAR(255) NOT NULL,
+                qualification VARCHAR(255),
+                experience VARCHAR(255),
+                message TEXT,
+                image VARCHAR(255),
+                order_num INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         `
     };
 

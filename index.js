@@ -124,6 +124,7 @@ try {
   app.use("/api/student-fees", require("./routes/feeRoutes"));
   app.use("/api/staff", require("./routes/staffRoutes"));
   app.use("/api/receptionist", require("./routes/receptionistRoutes"));
+  app.use("/api/directors", require("./routes/directorRoutes"));
   console.log("✅ Routes initialized");
 
   // Serve static files with dynamic path resolution
@@ -345,6 +346,21 @@ try {
           } catch(err) { /* column may already exist */ }
         }
       }
+
+      // Directors Table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS directors (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          position VARCHAR(255) NOT NULL,
+          qualification VARCHAR(255),
+          experience VARCHAR(255),
+          message TEXT,
+          image VARCHAR(255),
+          order_num INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
       console.log("✅ Database tables verified.");
     } catch (err) {

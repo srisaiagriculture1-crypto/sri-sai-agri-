@@ -282,6 +282,7 @@ export default function AdminDashboard() {
     { id: 'imports', label: 'Excel Imports', icon: FileSpreadsheet },
     { id: 'staff', label: 'Staff Accounts', icon: Users },
     { id: 'hero', label: 'Hero Slider Management', icon: LayoutDashboard },
+    { id: 'directors', label: 'Board of Directors', icon: Award },
     { id: 'faculty', label: 'Faculty Management', icon: Users },
     { id: 'courses', label: 'Course Management', icon: BookOpen },
     { id: 'ranks', label: 'Rankings & Results', icon: Award },
@@ -1315,6 +1316,35 @@ export default function AdminDashboard() {
                 )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {activeTab === 'directors' && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name *</label>
+                        <input required placeholder="Dr. K. S. Rao" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, name: e.target.value})} value={formData.name || ''} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Position / Designation *</label>
+                        <input required placeholder="Chairman & Managing Director" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, position: e.target.value})} value={formData.position || ''} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Academic Qualifications</label>
+                        <input placeholder="Ph.D. in Agronomy & Agricultural Economics" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, qualification: e.target.value})} value={formData.qualification || ''} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Experience / Tenure</label>
+                        <input placeholder="30+ Years in Agricultural Education" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, experience: e.target.value})} value={formData.experience || ''} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Display Order (Sorting)</label>
+                        <input type="number" placeholder="1" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, order_num: e.target.value})} value={formData.order_num || ''} />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Leadership Message / Bio Quote</label>
+                        <textarea placeholder="Dedicated to nurturing next-generation agricultural scientists, rural empowerment, and research innovations..." className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all h-28" onChange={e => setFormData({...formData, message: e.target.value})} value={formData.message || ''} />
+                      </div>
+                    </>
+                  )}
+
                   {activeTab === 'faculty' && (
                     <>
                       <div className="space-y-2">
@@ -2900,14 +2930,14 @@ export default function AdminDashboard() {
                                 <div className="flex flex-col">
                                   <span className="text-sm font-bold text-ink">{item.student_name || item.studentName || item.name || item.title || item.label || item.tag}</span>
                                   <span className="text-[10px] font-bold text-gray-400 mt-0.5 tracking-wide">
-                                    #{idx + 1} {item.hall_ticket_number || item.hallTicketNumber ? `· ${item.hall_ticket_number || item.hallTicketNumber}` : ''}
+                                    {item.qualification || (item.hall_ticket_number || item.hallTicketNumber ? `· ${item.hall_ticket_number || item.hallTicketNumber}` : `#${idx + 1}`)}
                                   </span>
                                 </div>
                               </div>
                             </td>
                             <td className="px-10 py-6">
                               <span className="px-4 py-1.5 rounded-xl bg-sky border border-blue/10 text-blue text-[10px] font-black uppercase shadow-sm shadow-blue/5">
-                                {item.department || item.stream || item.exam || item.category || item.achievement || item.sub_label || item.hall_ticket_number || item.hallTicketNumber || 'Default'}
+                                {item.position || item.department || item.stream || item.exam || item.category || item.achievement || item.sub_label || item.hall_ticket_number || item.hallTicketNumber || 'Default'}
                               </span>
                             </td>
                             <td className="px-10 py-6 text-right">

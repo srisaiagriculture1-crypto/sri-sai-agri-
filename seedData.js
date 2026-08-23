@@ -73,6 +73,35 @@ const staticData = {
         btn2_label: "About Our Institute",
         btn2_href: "/about"
     }
+  ],
+  directors: [
+    {
+      name: "Dr. K. S. Rao",
+      position: "Chairman & Managing Director",
+      qualification: "Ph.D. in Agronomy & Agricultural Economics",
+      experience: "30+ Years in Agricultural Education & Leadership",
+      message: "Dedicated to nurturing next-generation agricultural scientists, rural empowerment, and pioneering scientific innovations.",
+      image: "gallery/1.png",
+      order_num: 1
+    },
+    {
+      name: "Prof. M. Ramachandra Reddy",
+      position: "Director - Academic Affairs & Research",
+      qualification: "M.Sc. (Agri), Ph.D. in Soil Science",
+      experience: "25+ Years Academic & Research Excellence",
+      message: "Fostering rigorous scientific discovery, student-centered mentoring, and transformative agricultural pedagogy.",
+      image: "gallery/2.png",
+      order_num: 2
+    },
+    {
+      name: "Dr. V. Sudhakar",
+      position: "Executive Director - Administration",
+      qualification: "Ph.D. in Plant Pathology",
+      experience: "20+ Years Institutional Management",
+      message: "Committed to delivering world-class laboratory infrastructure, research farm ecosystems, and industry placements.",
+      image: "gallery/3.png",
+      order_num: 3
+    }
   ]
 };
 
