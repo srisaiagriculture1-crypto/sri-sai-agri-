@@ -476,7 +476,7 @@ export default function StaffDashboard() {
                <button
                   onClick={() => markAllFiltered('Present')}
                   disabled={markingAll || filteredStudents.length === 0}
-                  className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#15803d] hover:bg-[#166534] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
                   title="Mark all matching students as Present"
                >
                   <Check size={15} /> Mark All Present
@@ -485,7 +485,7 @@ export default function StaffDashboard() {
                <button
                   onClick={() => markAllFiltered('Absent')}
                   disabled={markingAll || filteredStudents.length === 0}
-                  className="px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#dc2626] hover:bg-[#b91c1c] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
                   title="Mark all matching students as Absent"
                >
                   <X size={15} /> Mark All Absent
@@ -568,10 +568,10 @@ export default function StaffDashboard() {
                                   <div className="flex items-center justify-end gap-2">
                                      <button 
                                        onClick={() => markAttendance(student.id, 'Present')}
-                                       className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                       className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                                          currentStatus?.toLowerCase() === 'present' 
-                                           ? 'bg-green-600 text-white shadow-md shadow-green-600/30' 
-                                           : 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-800'
+                                           ? 'bg-[#15803d] text-white border border-[#15803d] shadow-md shadow-green-600/30 font-black' 
+                                           : 'bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-800 border border-gray-200'
                                        }`}
                                        title="Mark Present"
                                      >
@@ -579,10 +579,10 @@ export default function StaffDashboard() {
                                      </button>
                                      <button 
                                        onClick={() => markAttendance(student.id, 'Absent')}
-                                       className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                       className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                                          currentStatus?.toLowerCase() === 'absent' 
-                                           ? 'bg-red-600 text-white shadow-md shadow-red-600/30' 
-                                           : 'bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700'
+                                           ? 'bg-[#dc2626] text-white border border-[#dc2626] shadow-md shadow-red-600/30 font-black' 
+                                           : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200'
                                        }`}
                                        title="Mark Absent"
                                      >
