@@ -4,7 +4,7 @@ import PageHeader from "../components/ui/PageHeader";
 import Reveal from "../components/ui/Reveal";
 import Contact from "../components/sections/Contact";
 import { getImageUrl } from "../utils/imageUrl";
-import { Award, Briefcase, GraduationCap, Quote, Sparkles } from "lucide-react";
+import { Award, Briefcase, Sparkles } from "lucide-react";
 
 const whyChooseUs = [
   { icon: "👨‍🏫", title: "Experienced & Dedicated Research Faculty", desc: "Our team of expert educators brings deep scientific knowledge and a passion for student research success." },
@@ -27,27 +27,18 @@ const defaultDirectors = [
     id: "def-1",
     name: "Dr. K. S. Rao",
     position: "Chairman & Managing Director",
-    qualification: "Ph.D. in Agronomy & Agricultural Economics",
-    experience: "30+ Years in Education & Leadership",
-    message: "Dedicated to nurturing next-generation agricultural scientists, rural empowerment, and pioneering research.",
     image: "/gallery/1.png"
   },
   {
     id: "def-2",
     name: "Prof. M. Ramachandra Reddy",
     position: "Director - Academic Affairs & Research",
-    qualification: "M.Sc. (Agri), Ph.D. in Soil Science",
-    experience: "25+ Years Academic Excellence",
-    message: "Fostering rigorous scientific discovery, student-centered mentoring, and transformative agricultural pedagogy.",
     image: "/gallery/2.png"
   },
   {
     id: "def-3",
     name: "Dr. V. Sudhakar",
-    position: "Executive Director - Administration",
-    qualification: "Ph.D. in Plant Pathology",
-    experience: "20+ Years Institutional Leadership",
-    message: "Committed to delivering world-class laboratory infrastructure, research ecosystems, and industry placements.",
+    position: "Executive Director",
     image: "/gallery/3.png"
   }
 ];
@@ -66,6 +57,9 @@ export default function AboutPage() {
         const res = await axios.get("/api/directors");
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           setDirectors(res.data);
+        } else if (res.data && Array.isArray(res.data) && res.data.length === 0) {
+          // If database is empty, provide fallback
+          setDirectors(defaultDirectors);
         } else {
           setDirectors(defaultDirectors);
         }
@@ -127,7 +121,7 @@ export default function AboutPage() {
 
       {/* ── Board of Directors Section ── */}
       <section className="py-24 bg-gradient-to-b from-white via-[#f8fafc] to-[#f1f5f9] border-t border-b border-gray-100 relative overflow-hidden">
-        {/* Decorative background glow elements */}
+        {/* Decorative background glow */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#15803d]/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -137,15 +131,15 @@ export default function AboutPage() {
               <Sparkles size={14} className="text-blue" />
               <span>Leadership &amp; Governance</span>
             </div>
-            <h2 className="font-lora text-3xl md:text-5xl font-bold text-ink leading-[1.25] mb-5">
-              Governing <em className="text-blue not-italic">Board of Directors</em>
+            <h2 className="font-lora text-3xl md:text-5xl font-bold text-ink leading-[1.25] mb-4">
+              Board of <em className="text-blue not-italic">Directors</em>
             </h2>
             <p className="text-ink/65 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
-              Visionary academic leaders, agricultural researchers, and distinguished educators steering Sri Sai Institute towards global academic and scientific excellence.
+              Visionary leaders and eminent personalities guiding Sri Sai Institute of Agriculture Sciences.
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {directors.map((director, i) => {
               const initials = director.name
                 ? director.name.split(" ").filter(Boolean).map(n => n[0]).join("").substring(0, 2).toUpperCase()
@@ -153,70 +147,41 @@ export default function AboutPage() {
 
               return (
                 <Reveal key={director.id || i} delay={i * 0.1}>
-                  <div className="group bg-white rounded-3xl p-8 border border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(19,71,160,0.12)] hover:border-blue/40 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
-                    {/* Top gradient highlight banner */}
+                  <div className="group bg-white rounded-3xl p-6 md:p-8 border border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(19,71,160,0.12)] hover:border-blue/40 transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden h-full">
+                    {/* Top gradient highlight accent */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue via-[#15803d] to-blue group-hover:h-2.5 transition-all duration-300" />
                     
-                    {/* Image / Avatar Header */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 mb-6 pt-2">
-                      <div className="relative shrink-0">
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gradient-to-br from-blue/10 to-[#15803d]/10 border-2 border-white shadow-md group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
-                          {director.image ? (
-                            <img
-                              src={getImageUrl(director.image)}
-                              alt={director.name}
-                              className="w-full h-full object-cover object-top"
-                              onError={(e) => { e.target.style.display = "none"; }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center font-lora text-2xl sm:text-3xl font-black text-blue bg-blue/10">
-                              {initials}
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute -bottom-2 -right-2 bg-[#15803d] text-white p-1.5 rounded-xl shadow-md border-2 border-white">
-                          <Award size={14} />
-                        </div>
+                    {/* Director Photo / Avatar */}
+                    <div className="relative mb-6 pt-2">
+                      <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden bg-gradient-to-br from-blue/10 to-[#15803d]/10 border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+                        {director.image ? (
+                          <img
+                            src={getImageUrl(director.image)}
+                            alt={director.name}
+                            className="w-full h-full object-cover object-top"
+                            onError={(e) => { e.target.style.display = "none"; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-lora text-3xl md:text-4xl font-black text-blue bg-blue/10">
+                            {initials}
+                          </div>
+                        )}
                       </div>
-
-                      <div className="text-center sm:text-left flex-1">
-                        <h3 className="font-lora text-xl sm:text-2xl font-bold text-ink group-hover:text-blue transition-colors duration-200 leading-snug">
-                          {director.name}
-                        </h3>
-                        <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-blue/10 text-blue border border-blue/15 rounded-full text-xs font-bold uppercase tracking-wider">
-                          <Briefcase size={12} className="shrink-0" />
-                          <span>{director.position}</span>
-                        </div>
+                      <div className="absolute -bottom-2 -right-2 bg-[#15803d] text-white p-2 rounded-xl shadow-md border-2 border-white">
+                        <Award size={16} />
                       </div>
                     </div>
 
-                    {/* Qualifications & Experience details */}
-                    <div className="space-y-2.5 pt-4 border-t border-gray-100 mb-5 text-xs text-ink/75">
-                      {director.qualification && (
-                        <div className="flex items-start gap-2.5">
-                          <GraduationCap size={15} className="text-[#15803d] shrink-0 mt-0.5" />
-                          <span className="font-semibold text-ink leading-relaxed">{director.qualification}</span>
-                        </div>
-                      )}
-                      {director.experience && (
-                        <div className="flex items-center gap-2.5 text-muted">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue shrink-0" />
-                          <span className="font-medium">{director.experience}</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* Director Name */}
+                    <h3 className="font-lora text-xl md:text-2xl font-bold text-ink group-hover:text-blue transition-colors duration-200 leading-snug mb-3">
+                      {director.name}
+                    </h3>
 
-                    {/* Leadership Message / Quote */}
-                    {director.message && (
-                      <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
-                        <div className="p-4 bg-sky2/50 rounded-2xl border-l-4 border-blue flex items-start gap-3">
-                          <Quote size={16} className="text-blue/60 shrink-0 mt-0.5 rotate-180" />
-                          <p className="font-lora italic text-[0.84rem] sm:text-[0.88rem] text-blue2 leading-relaxed m-0">
-                            "{director.message}"
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    {/* Position / Designation */}
+                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue/10 text-blue border border-blue/20 rounded-full text-xs font-bold uppercase tracking-wider">
+                      <Briefcase size={13} className="shrink-0 text-blue" />
+                      <span>{director.position}</span>
+                    </div>
                   </div>
                 </Reveal>
               );
@@ -229,7 +194,7 @@ export default function AboutPage() {
       <section className="py-20 bg-cream">
         <div className="max-w-site mx-auto px-5 md:px-7">
           <Reveal className="text-center max-w-xl mx-auto mb-14">
-            <span className="text-[0.72rem] font-bold text-blue uppercase tracking-[.12em] mb-3 block">③ Why Choose Our Institute</span>
+            <span className="text-[0.72rem] font-bold text-blue uppercase tracking-[.12em] mb-3 block">② Why Choose Our Institute</span>
             <h2 className="font-lora text-3xl md:text-4xl font-bold text-ink">
               What Makes <em className="text-blue">Sri Sai Agri</em> Different
             </h2>
@@ -253,7 +218,7 @@ export default function AboutPage() {
       <section className="py-20 bg-[#0b1220] text-white">
         <div className="max-w-site mx-auto px-5 md:px-7">
           <Reveal className="text-center max-w-xl mx-auto mb-14">
-            <span className="text-[0.72rem] font-bold text-[#93c5fd] uppercase tracking-[.12em] mb-3 block">④ Academic Programs</span>
+            <span className="text-[0.72rem] font-bold text-[#93c5fd] uppercase tracking-[.12em] mb-3 block">③ Academic Programs</span>
             <h2 className="font-lora text-3xl md:text-4xl font-bold text-white">
               Degrees <em className="text-[#fde68a]">Offered</em>
             </h2>

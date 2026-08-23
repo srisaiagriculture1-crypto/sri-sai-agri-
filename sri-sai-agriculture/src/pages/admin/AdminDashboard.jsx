@@ -1310,7 +1310,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                        <h4 className="font-bold text-ink">{editingId ? 'Update Information' : 'Entry Details'}</h4>
-                       <p className="text-[10px] text-muted uppercase font-black tracking-widest">Please fill all required fields</p>
+                            <p className="text-[10px] text-muted uppercase font-black tracking-widest">Please fill all required fields</p>
                     </div>
                   </div>
                 )}
@@ -1325,22 +1325,6 @@ export default function AdminDashboard() {
                       <div className="space-y-2">
                         <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Position / Designation *</label>
                         <input required placeholder="Chairman & Managing Director" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, position: e.target.value})} value={formData.position || ''} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Academic Qualifications</label>
-                        <input placeholder="Ph.D. in Agronomy & Agricultural Economics" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, qualification: e.target.value})} value={formData.qualification || ''} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Experience / Tenure</label>
-                        <input placeholder="30+ Years in Agricultural Education" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, experience: e.target.value})} value={formData.experience || ''} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Display Order (Sorting)</label>
-                        <input type="number" placeholder="1" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, order_num: e.target.value})} value={formData.order_num || ''} />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Leadership Message / Bio Quote</label>
-                        <textarea placeholder="Dedicated to nurturing next-generation agricultural scientists, rural empowerment, and research innovations..." className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all h-28" onChange={e => setFormData({...formData, message: e.target.value})} value={formData.message || ''} />
                       </div>
                     </>
                   )}
