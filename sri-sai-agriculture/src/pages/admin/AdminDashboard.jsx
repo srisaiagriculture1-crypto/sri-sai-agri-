@@ -3203,18 +3203,18 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
   const [showAdd, setShowAdd] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [showPass, setShowPass] = useState(false);
-  const [newRec, setNewRec] = useState({ name: '', username: '', password: '', phone: '' });
-  const [editForm, setEditForm] = useState({ name: '', username: '', password: '', phone: '', status: 'Active' });
+  const [newRec, setNewRec] = useState({ name: '', email: '', password: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
   const [saving, setSaving] = useState(false);
 
   const handleCreate = async () => {
-    if (!newRec.name || !newRec.username || !newRec.password) {
-      alert('Please fill Full Name, Login Username, and Password');
+    if (!newRec.name || !newRec.email || !newRec.password) {
+      alert('Please fill Full Name, Email Address, and Password');
       return;
     }
     setSaving(true);
-    await onCreate(newRec);
-    setNewRec({ name: '', username: '', password: '', phone: '' });
+    await onCreate({ name: newRec.name, email: newRec.email, password: newRec.password });
+    setNewRec({ name: '', email: '', password: '' });
     setShowAdd(false);
     setSaving(false);
   };
@@ -3222,7 +3222,7 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
   const handleEditSave = async () => {
     if (!editingAccount) return;
     setSaving(true);
-    await onUpdate(editingAccount.id, editForm);
+    await onUpdate(editingAccount.id, { name: editForm.name, email: editForm.email, password: editForm.password });
     setEditingAccount(null);
     setSaving(false);
   };
@@ -3239,7 +3239,7 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
             <div>
               <h3 className="text-xl font-black text-ink">Receptionist Admin Panel Logins</h3>
               <p className="text-[11px] text-muted font-bold tracking-wider mt-0.5 uppercase">
-                Total: {(receptionistList || []).length} Accounts • Controls access to <span className="text-blue">/receptionist/dashboard</span>
+                Total: {(receptionistList || []).length} Accounts • Login portal: <span className="text-blue">/receptionist/dashboard</span>
               </p>
             </div>
           </div>
@@ -3269,17 +3269,17 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
             <div>
               <h4 className="font-black text-ink text-sm uppercase tracking-widest">Create New Receptionist Login Credentials</h4>
-              <p className="text-xs text-muted mt-1">This user will be able to log in to the Receptionist Admin Panel to manage staff attendance.</p>
+              <p className="text-xs text-muted mt-1">Fill in the Name, Email, and Password for receptionist login access.</p>
             </div>
             <button onClick={() => setShowAdd(false)} className="p-2 text-gray-400 hover:text-ink"><X size={18} /></button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name / Desk Title *</label>
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name *</label>
               <input
                 required
-                placeholder="e.g. Front Desk Lead / P. Anitha"
+                placeholder="e.g. S. Radhika"
                 value={newRec.name}
                 onChange={e => setNewRec({ ...newRec, name: e.target.value })}
                 className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
@@ -3287,18 +3287,19 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Login Username / ID *</label>
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Email Address (Login ID) *</label>
               <input
                 required
-                placeholder="e.g. srisai2026 or reception_front"
-                value={newRec.username}
-                onChange={e => setNewRec({ ...newRec, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                type="email"
+                placeholder="e.g. srisaiagriculture1@gmail.com"
+                value={newRec.email}
+                onChange={e => setNewRec({ ...newRec, email: e.target.value.trim().toLowerCase() })}
                 className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Login Password *</label>
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Password *</label>
               <div className="relative">
                 <input
                   required
@@ -3317,16 +3318,6 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
                 </button>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Contact Phone Number (Optional)</label>
-              <input
-                placeholder="e.g. 9876543210"
-                value={newRec.phone}
-                onChange={e => setNewRec({ ...newRec, phone: e.target.value })}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
-              />
-            </div>
           </div>
 
           <button
@@ -3342,18 +3333,18 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
       {/* Edit Receptionist Credentials Modal */}
       {editingAccount && (
         <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl space-y-6 animate-scaleUp">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 animate-scaleUp">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
                 <h4 className="font-black text-ink text-base">Edit Receptionist Credentials</h4>
-                <p className="text-xs text-muted">ID #{editingAccount.id} • {editingAccount.username}</p>
+                <p className="text-xs text-muted">ID #{editingAccount.id}</p>
               </div>
               <button onClick={() => setEditingAccount(null)} className="p-2 text-gray-400 hover:text-ink"><X size={18} /></button>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Full Name *</label>
                 <input
                   value={editForm.name}
                   onChange={e => setEditForm({ ...editForm, name: e.target.value })}
@@ -3362,10 +3353,11 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Login Username</label>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Email Address (Login ID) *</label>
                 <input
-                  value={editForm.username}
-                  onChange={e => setEditForm({ ...editForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                  type="email"
+                  value={editForm.email}
+                  onChange={e => setEditForm({ ...editForm, email: e.target.value.trim().toLowerCase() })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
                 />
               </div>
@@ -3379,27 +3371,6 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
                   onChange={e => setEditForm({ ...editForm, password: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Contact Phone</label>
-                <input
-                  value={editForm.phone}
-                  onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Account Status</label>
-                <select
-                  value={editForm.status}
-                  onChange={e => setEditForm({ ...editForm, status: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
-                >
-                  <option value="Active">Active (Can Login)</option>
-                  <option value="Inactive">Inactive (Disabled)</option>
-                </select>
               </div>
             </div>
 
@@ -3426,8 +3397,8 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h4 className="font-black text-ink text-sm uppercase tracking-widest">Active Receptionist Credentials</h4>
-            <p className="text-xs text-muted mt-0.5">Use these credentials on <span className="font-mono text-blue">/receptionist/dashboard</span></p>
+            <h4 className="font-black text-ink text-sm uppercase tracking-widest">Registered Receptionist Credentials</h4>
+            <p className="text-xs text-muted mt-0.5">Use email and password on <span className="font-mono text-blue">/receptionist/dashboard</span></p>
           </div>
           <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-blue rounded-xl hover:bg-sky transition-all">
             <RefreshCw size={16} />
@@ -3438,17 +3409,15 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Receptionist / Desk Name</th>
-                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Login Username</th>
-                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
-                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Receptionist Name</th>
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Email Address (Login ID)</th>
                 <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {!(receptionistList || []).length ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-gray-400 font-bold text-xs uppercase tracking-widest">
+                  <td colSpan={3} className="px-6 py-16 text-center text-gray-400 font-bold text-xs uppercase tracking-widest">
                     No receptionist accounts registered yet. Click "Add Receptionist Login" above.
                   </td>
                 </tr>
@@ -3457,7 +3426,7 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
                   <tr key={rec.id} className="hover:bg-sky/30 transition-colors">
                     <td className="px-6 py-4 font-bold text-ink">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-blue/10 text-blue font-black text-xs flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-xl bg-blue/10 text-blue font-black text-xs flex items-center justify-center">
                           {rec.name ? rec.name[0].toUpperCase() : 'R'}
                         </div>
                         <div>
@@ -3467,22 +3436,14 @@ function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onU
                       </div>
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-blue text-xs">
-                      <span className="px-2.5 py-1 bg-blue/10 rounded-lg">{rec.username}</span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-semibold text-muted">
-                      {rec.phone || '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${rec.status === 'Active' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                        {rec.status || 'Active'}
-                      </span>
+                      <span className="px-3 py-1.5 bg-blue/10 text-blue rounded-xl inline-block">{rec.username}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => {
                             setEditingAccount(rec);
-                            setEditForm({ name: rec.name || '', username: rec.username || '', password: '', phone: rec.phone || '', status: rec.status || 'Active' });
+                            setEditForm({ name: rec.name || '', email: rec.username || '', password: '' });
                           }}
                           className="p-2 text-blue hover:bg-blue/10 rounded-xl transition-all"
                           title="Edit Credentials"

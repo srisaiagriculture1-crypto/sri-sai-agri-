@@ -285,10 +285,11 @@ export default function ReceptionistDashboard() {
           {error && <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100">{error}</div>}
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Username</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email / Username</label>
               <input 
                 type="text" 
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue/20 focus:border-blue focus:outline-none transition-all" 
+                placeholder="e.g. srisaiagriculture1@gmail.com"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue/20 focus:border-blue focus:outline-none transition-all text-sm" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -298,7 +299,8 @@ export default function ReceptionistDashboard() {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
               <input 
                 type="password" 
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue/20 focus:border-blue focus:outline-none transition-all" 
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue/20 focus:border-blue focus:outline-none transition-all text-sm" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

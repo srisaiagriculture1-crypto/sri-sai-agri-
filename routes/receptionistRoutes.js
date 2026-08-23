@@ -14,7 +14,6 @@ const ensureReceptionistsTable = async () => {
         name VARCHAR(255) NOT NULL,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        phone VARCHAR(50),
         status VARCHAR(50) DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -24,14 +23,14 @@ const ensureReceptionistsTable = async () => {
   }
 };
 
-// Receptionist Login
+// Receptionist Login (by Email or Username)
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    return res.status(400).json({ message: "Email / Username and password are required" });
   }
 
-  const cleanUser = username.trim();
+  const cleanUser = username.trim().toLowerCase();
   const cleanPass = password.trim();
 
   try {
@@ -39,7 +38,7 @@ router.post("/login", async (req, res) => {
 
     // 1. Check in database
     const [rows] = await pool.query(
-      "SELECT * FROM receptionists WHERE LOWER(username) = LOWER(?) AND status = 'Active'",
+      "SELECT * FROM receptionists WHERE LOWER(username) = ?",
       [cleanUser]
     );
 
@@ -48,7 +47,6 @@ router.post("/login", async (req, res) => {
 
     if (rows.length > 0) {
       const user = rows[0];
-      // Compare hash or plaintext fallback
       const isMatch = await bcrypt.compare(cleanPass, user.password).catch(() => false);
       if (isMatch || cleanPass === user.password) {
         authenticated = true;
@@ -57,9 +55,9 @@ router.post("/login", async (req, res) => {
     }
 
     // 2. Fallback to ENV credentials
-    const expectedUsername = (process.env.RECEPTIONIST_USERNAME || "srisai2026").trim();
+    const expectedUsername = (process.env.RECEPTIONIST_USERNAME || "srisai2026").trim().toLowerCase();
     const expectedPassword = (process.env.RECEPTIONIST_PASSWORD || "srisai@2026").trim();
-    if (!authenticated && cleanUser.toLowerCase() === expectedUsername.toLowerCase() && cleanPass === expectedPassword) {
+    if (!authenticated && cleanUser === expectedUsername && cleanPass === expectedPassword) {
       authenticated = true;
       receptionistData = { id: "receptionist", name: "Front Desk Receptionist", username: expectedUsername };
     }
@@ -87,7 +85,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    return res.status(401).json({ message: "Invalid receptionist username or password" });
+    return res.status(401).json({ message: "Invalid email / username or password" });
   } catch (err) {
     console.error("Receptionist login error:", err);
     return res.status(500).json({ message: "Login service error: " + err.message });
@@ -124,7 +122,7 @@ router.get("/admin/list", authenticate, async (req, res) => {
   try {
     await ensureReceptionistsTable();
     const [rows] = await pool.query(
-      "SELECT id, name, username, phone, status, created_at FROM receptionists ORDER BY id ASC"
+      "SELECT id, name, username, status, created_at FROM receptionists ORDER BY id ASC"
     );
     res.json(rows);
   } catch (err) {
@@ -133,34 +131,35 @@ router.get("/admin/list", authenticate, async (req, res) => {
   }
 });
 
-// Create new receptionist account
+// Create new receptionist account (Name, Email, Password)
 router.post("/admin/create", authenticate, async (req, res) => {
-  const { name, username, password, phone } = req.body;
-  if (!name || !username || !password) {
-    return res.status(400).json({ message: "Name, Username, and Password are required" });
+  const { name, email, username, password } = req.body;
+  const loginEmail = (email || username || "").trim().toLowerCase();
+
+  if (!name || !loginEmail || !password) {
+    return res.status(400).json({ message: "Name, Email, and Password are required" });
   }
 
   try {
     await ensureReceptionistsTable();
-    const cleanUser = username.trim();
 
-    // Check if username already taken
+    // Check if email/username already taken
     const [existing] = await pool.query(
-      "SELECT id FROM receptionists WHERE LOWER(username) = LOWER(?)",
-      [cleanUser]
+      "SELECT id FROM receptionists WHERE LOWER(username) = ?",
+      [loginEmail]
     );
     if (existing.length > 0) {
-      return res.status(400).json({ message: "Username already exists. Please choose a different login username." });
+      return res.status(400).json({ message: "An account with this email already exists." });
     }
 
     const hashedPassword = await bcrypt.hash(password.trim(), 10);
     const [result] = await pool.query(
-      "INSERT INTO receptionists (name, username, password, phone, status) VALUES (?, ?, ?, ?, 'Active')",
-      [name.trim(), cleanUser, hashedPassword, phone ? phone.trim() : ""]
+      "INSERT INTO receptionists (name, username, password, status) VALUES (?, ?, ?, 'Active')",
+      [name.trim(), loginEmail, hashedPassword]
     );
 
     const [created] = await pool.query(
-      "SELECT id, name, username, phone, status, created_at FROM receptionists WHERE id = ?",
+      "SELECT id, name, username, status, created_at FROM receptionists WHERE id = ?",
       [result.insertId]
     );
     res.status(201).json({ message: "Receptionist account created successfully", account: created[0] });
@@ -172,20 +171,20 @@ router.post("/admin/create", authenticate, async (req, res) => {
 
 // Update receptionist account
 router.put("/admin/update/:id", authenticate, async (req, res) => {
-  const { name, username, password, phone, status } = req.body;
+  const { name, email, username, password } = req.body;
+  const loginEmail = (email || username || "").trim().toLowerCase();
   const { id } = req.params;
 
   try {
     await ensureReceptionistsTable();
 
-    // Check if username is being changed to one that already exists
-    if (username) {
+    if (loginEmail) {
       const [existing] = await pool.query(
-        "SELECT id FROM receptionists WHERE LOWER(username) = LOWER(?) AND id != ?",
-        [username.trim(), id]
+        "SELECT id FROM receptionists WHERE LOWER(username) = ? AND id != ?",
+        [loginEmail, id]
       );
       if (existing.length > 0) {
-        return res.status(400).json({ message: "Username already taken by another account." });
+        return res.status(400).json({ message: "Email already in use by another account." });
       }
     }
 
@@ -193,9 +192,7 @@ router.put("/admin/update/:id", authenticate, async (req, res) => {
     const updateValues = [];
 
     if (name) { updateFields.push("name = ?"); updateValues.push(name.trim()); }
-    if (username) { updateFields.push("username = ?"); updateValues.push(username.trim()); }
-    if (phone !== undefined) { updateFields.push("phone = ?"); updateValues.push(phone.trim()); }
-    if (status) { updateFields.push("status = ?"); updateValues.push(status); }
+    if (loginEmail) { updateFields.push("username = ?"); updateValues.push(loginEmail); }
     if (password && password.trim().length > 0) {
       const hashed = await bcrypt.hash(password.trim(), 10);
       updateFields.push("password = ?");
@@ -203,14 +200,14 @@ router.put("/admin/update/:id", authenticate, async (req, res) => {
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).json({ message: "No fields provided to update" });
+      return res.status(400).json({ message: "No changes provided to update" });
     }
 
     updateValues.push(id);
     await pool.query(`UPDATE receptionists SET ${updateFields.join(", ")} WHERE id = ?`, updateValues);
 
     const [updated] = await pool.query(
-      "SELECT id, name, username, phone, status, created_at FROM receptionists WHERE id = ?",
+      "SELECT id, name, username, status, created_at FROM receptionists WHERE id = ?",
       [id]
     );
     res.json({ message: "Receptionist account updated successfully", account: updated[0] });
