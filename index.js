@@ -322,6 +322,8 @@ try {
       const feeCols = [
         "total_fee DECIMAL(10,2) DEFAULT 0",
         "paid_amount DECIMAL(10,2) DEFAULT 0",
+        "admission_fee DECIMAL(10,2) DEFAULT 0",
+        "admission_fee_paid DECIMAL(10,2) DEFAULT 0",
         "hostel_fee DECIMAL(10,2) DEFAULT 0",
         "hostel_fee_paid DECIMAL(10,2) DEFAULT 0",
         "exam_fee DECIMAL(10,2) DEFAULT 0",

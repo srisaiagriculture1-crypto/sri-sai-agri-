@@ -21,22 +21,24 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
         await pool.query(
           `UPDATE student_fees SET 
             total_fee = ?, paid_amount = ?, 
+            admission_fee = ?, admission_fee_paid = ?,
             hostel_fee = ?, hostel_fee_paid = ?,
             exam_fee = ?, exam_fee_paid = ?,
             practical_fee = ?, practical_fee_paid = ?,
             travelling_fee = ?, travelling_fee_paid = ?,
-            committed_fee = ?, admission_fee = ?, 
+            committed_fee = ?, 
             breakdown_total_fee = ?, breakdown_practical_fee = ?,
             breakdown_hostel_fee = ?, breakdown_travelling_fee = ?,
             payment_status = ?
           WHERE student_id = ? AND LOWER(academic_year) = LOWER(?)`,
           [
             Number(fee.total_fee || 0), Number(fee.paid_amount || 0),
+            Number(fee.admission_fee || 0), Number(fee.admission_fee_paid || 0),
             Number(fee.hostel_fee || 0), Number(fee.hostel_fee_paid || 0),
             Number(fee.exam_fee || 0), Number(fee.exam_fee_paid || 0),
             Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
             Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
-            Number(fee.committed_fee || 0), Number(fee.admission_fee || 0),
+            Number(fee.committed_fee || 0),
             Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
             Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),
             fee.payment_status || 'Pending',
@@ -47,23 +49,25 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
         await pool.query(
           `INSERT INTO student_fees (
             student_id, academic_year, total_fee, paid_amount,
+            admission_fee, admission_fee_paid,
             hostel_fee, hostel_fee_paid,
             exam_fee, exam_fee_paid,
             practical_fee, practical_fee_paid,
             travelling_fee, travelling_fee_paid,
-            committed_fee, admission_fee,
+            committed_fee,
             breakdown_total_fee, breakdown_practical_fee,
             breakdown_hostel_fee, breakdown_travelling_fee,
             payment_status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             studentId, year,
             Number(fee.total_fee || 0), Number(fee.paid_amount || 0),
+            Number(fee.admission_fee || 0), Number(fee.admission_fee_paid || 0),
             Number(fee.hostel_fee || 0), Number(fee.hostel_fee_paid || 0),
             Number(fee.exam_fee || 0), Number(fee.exam_fee_paid || 0),
             Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
             Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
-            Number(fee.committed_fee || 0), Number(fee.admission_fee || 0),
+            Number(fee.committed_fee || 0),
             Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
             Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),
             fee.payment_status || 'Pending'
@@ -103,6 +107,7 @@ router.get("/admin/proofs", authenticate, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    console.error("GET /admin/proofs error:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -161,10 +166,12 @@ router.put("/proofs/:proofId/status", authenticate, async (req, res) => {
     if (status === 'Approved') {
       const year = proof.academic_year || '1st year';
       let colToIncrement = 'paid_amount';
-      if (proof.fee_type === 'Hostel Fee') colToIncrement = 'hostel_fee_paid';
-      else if (proof.fee_type === 'Examination Fee' || proof.fee_type === 'Exam Fee') colToIncrement = 'exam_fee_paid';
-      else if (proof.fee_type === 'Practical Fee') colToIncrement = 'practical_fee_paid';
-      else if (proof.fee_type === 'Travelling Expenses' || proof.fee_type === 'Travelling Fee') colToIncrement = 'travelling_fee_paid';
+      const fType = (proof.fee_type || '').toLowerCase();
+      if (fType.includes('admission')) colToIncrement = 'admission_fee_paid';
+      else if (fType.includes('hostel')) colToIncrement = 'hostel_fee_paid';
+      else if (fType.includes('exam')) colToIncrement = 'exam_fee_paid';
+      else if (fType.includes('practical')) colToIncrement = 'practical_fee_paid';
+      else if (fType.includes('travelling')) colToIncrement = 'travelling_fee_paid';
 
       // Ensure record exists
       const [existing] = await pool.query(

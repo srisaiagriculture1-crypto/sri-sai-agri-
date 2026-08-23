@@ -1196,10 +1196,10 @@ export default function AdminDashboard() {
                       setViewMode('form');
                       if (activeTab === 'students') {
                         setStudentFees([
-                          { academic_year: '1st year', total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0 },
-                          { academic_year: '2nd year', total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0 },
-                          { academic_year: '3rd year', total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0 },
-                          { academic_year: '4th year', total_fee: 0, committed_fee: 0, admission_fee: 0, practical_fee: 0, hostel_fee: 0, travelling_fee: 0 },
+                          { academic_year: '1st year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
+                          { academic_year: '2nd year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
+                          { academic_year: '3rd year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
+                          { academic_year: '4th year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
                         ]);
                       }
                     }
@@ -2013,11 +2013,12 @@ export default function AdminDashboard() {
                             const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
                               academic_year: year, 
                               total_fee: 0, paid_amount: 0, 
+                              admission_fee: 0, admission_fee_paid: 0,
                               hostel_fee: 0, hostel_fee_paid: 0,
                               exam_fee: 0, exam_fee_paid: 0,
                               practical_fee: 0, practical_fee_paid: 0,
                               travelling_fee: 0, travelling_fee_paid: 0, 
-                              committed_fee: 0, admission_fee: 0, payment_status: 'Pending'
+                              committed_fee: 0, payment_status: 'Pending'
                             };
 
                             const updateFee = (updates) => {
@@ -2030,6 +2031,7 @@ export default function AdminDashboard() {
 
                             const categories = [
                               { keyTotal: 'total_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
+                              { keyTotal: 'admission_fee', keyPaid: 'admission_fee_paid', label: 'Admission Fee', color: 'indigo' },
                               { keyTotal: 'hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
                               { keyTotal: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
                               { keyTotal: 'practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
@@ -2042,7 +2044,7 @@ export default function AdminDashboard() {
 
                             return (
                               <div key={year} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-<div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
+                                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-gray-100">
                                   <div className="flex items-center gap-3">
                                     <span className="font-black text-ink text-sm uppercase tracking-widest bg-ink/5 px-4 py-2 rounded-xl">{year}</span>
                                     <span className="text-xs font-bold text-gray-500">Total Fee: <strong className="text-ink">₹{totalAllocated.toLocaleString()}</strong></span>
@@ -2069,7 +2071,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Category Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                                   {categories.map(cat => {
                                     const total = Number(fee[cat.keyTotal] || 0);
                                     const paid = Number(fee[cat.keyPaid] || 0);

@@ -168,6 +168,9 @@ export default function StudentDashboard() {
     if (normType === 'academic fee' || normType === 'college fee') {
       allocated = Number(fee.total_fee || 0);
       directPaid = Number(fee.paid_amount || 0);
+    } else if (normType === 'admission fee' || normType === 'admission') {
+      allocated = Number(fee.admission_fee || 0);
+      directPaid = Number(fee.admission_fee_paid || 0);
     } else if (normType === 'hostel fee') {
       allocated = Number(fee.hostel_fee || 0);
       directPaid = Number(fee.hostel_fee_paid || 0);
@@ -188,6 +191,7 @@ export default function StudentDashboard() {
       const fYear = (fee.academic_year || '').toLowerCase().trim();
 
       const typeMatches = pType === normType || 
+        (normType.includes('admission') && pType.includes('admission')) ||
         (normType.includes('academic') && (pType.includes('academic') || pType.includes('college'))) ||
         (normType.includes('college') && (pType.includes('academic') || pType.includes('college'))) ||
         (normType.includes('travelling') && pType.includes('travelling')) ||
@@ -419,13 +423,20 @@ export default function StudentDashboard() {
                      </div>
                   )}
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                      <PaymentOption 
                         icon="Book" 
                         title="Academic Fees" 
                         detail="College Tuition Fees" 
                         active={selectedFeeType === 'Academic Fee'}
                         onClick={() => setSelectedFeeType('Academic Fee')}
+                     />
+                     <PaymentOption 
+                        icon="GraduationCap" 
+                        title="Admission Fee" 
+                        detail="Registration & Admission" 
+                        active={selectedFeeType === 'Admission Fee'}
+                        onClick={() => setSelectedFeeType('Admission Fee')}
                      />
                      <PaymentOption 
                         icon="FlaskConical" 
