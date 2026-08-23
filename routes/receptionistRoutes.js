@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const pool = require("../utils/db");
 const authenticate = require("../utils/authMiddleware");
 
-// Ensure receptionists table exists and is seeded
+// Ensure receptionists table exists
 const ensureReceptionistsTable = async () => {
   try {
     await pool.query(`
@@ -19,19 +19,6 @@ const ensureReceptionistsTable = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    // Check if table is empty, seed default receptionist if so
-    const [rows] = await pool.query("SELECT id FROM receptionists LIMIT 1");
-    if (rows.length === 0) {
-      const defaultUser = (process.env.RECEPTIONIST_USERNAME || "srisai2026").trim();
-      const defaultPass = (process.env.RECEPTIONIST_PASSWORD || "srisai@2026").trim();
-      const hashed = await bcrypt.hash(defaultPass, 10);
-      await pool.query(
-        "INSERT INTO receptionists (name, username, password, phone, status) VALUES (?, ?, ?, ?, ?)",
-        ["Front Desk Receptionist", defaultUser, hashed, "9876543210", "Active"]
-      );
-      console.log("✨ Default receptionist account initialized.");
-    }
   } catch (err) {
     console.error("ensureReceptionistsTable error:", err.message);
   }
