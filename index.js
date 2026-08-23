@@ -353,14 +353,39 @@ try {
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           position VARCHAR(255) NOT NULL,
-          qualification VARCHAR(255),
-          experience VARCHAR(255),
-          message TEXT,
           image VARCHAR(255),
-          order_num INT DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // Receptionists Table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS receptionists (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          username VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL,
+          phone VARCHAR(50),
+          status VARCHAR(50) DEFAULT 'Active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Seed default receptionist account if empty
+      try {
+        const [recRows] = await pool.query("SELECT id FROM receptionists LIMIT 1");
+        if (recRows.length === 0) {
+          const bcrypt = require("bcryptjs");
+          const defaultUser = (process.env.RECEPTIONIST_USERNAME || "srisai2026").trim();
+          const defaultPass = (process.env.RECEPTIONIST_PASSWORD || "srisai@2026").trim();
+          const hashed = await bcrypt.hash(defaultPass, 10);
+          await pool.query(
+            "INSERT INTO receptionists (name, username, password, phone, status) VALUES (?, ?, ?, ?, 'Active')",
+            ["Front Desk Receptionist", defaultUser, hashed, "9876543210"]
+          );
+          console.log("✨ Default receptionist account created!");
+        }
+      } catch(e) { console.error("Receptionist seed note:", e.message); }
 
       console.log("✅ Database tables verified.");
     } catch (err) {

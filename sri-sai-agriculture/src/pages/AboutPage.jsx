@@ -4,6 +4,7 @@ import PageHeader from "../components/ui/PageHeader";
 import Reveal from "../components/ui/Reveal";
 import Contact from "../components/sections/Contact";
 import { getImageUrl } from "../utils/imageUrl";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import { Award, Briefcase, Sparkles } from "lucide-react";
 
 const whyChooseUs = [
@@ -47,6 +48,8 @@ export default function AboutPage() {
   const [directors, setDirectors] = useState([]);
   const [loadingDirectors, setLoadingDirectors] = useState(true);
 
+  useScrollReveal([directors]);
+
   useEffect(() => { 
     window.scrollTo(0, 0); 
   }, []);
@@ -57,9 +60,6 @@ export default function AboutPage() {
         const res = await axios.get("/api/directors");
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           setDirectors(res.data);
-        } else if (res.data && Array.isArray(res.data) && res.data.length === 0) {
-          // If database is empty, provide fallback
-          setDirectors(defaultDirectors);
         } else {
           setDirectors(defaultDirectors);
         }
@@ -139,51 +139,52 @@ export default function AboutPage() {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {directors.map((director, i) => {
               const initials = director.name
                 ? director.name.split(" ").filter(Boolean).map(n => n[0]).join("").substring(0, 2).toUpperCase()
                 : "BD";
 
               return (
-                <Reveal key={director.id || i} delay={i * 0.1}>
-                  <div className="group bg-white rounded-3xl p-6 md:p-8 border border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(19,71,160,0.12)] hover:border-blue/40 transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden h-full">
-                    {/* Top gradient highlight accent */}
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue via-[#15803d] to-blue group-hover:h-2.5 transition-all duration-300" />
-                    
-                    {/* Director Photo / Avatar */}
-                    <div className="relative mb-6 pt-2">
-                      <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden bg-gradient-to-br from-blue/10 to-[#15803d]/10 border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
-                        {director.image ? (
-                          <img
-                            src={getImageUrl(director.image)}
-                            alt={director.name}
-                            className="w-full h-full object-cover object-top"
-                            onError={(e) => { e.target.style.display = "none"; }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-lora text-3xl md:text-4xl font-black text-blue bg-blue/10">
-                            {initials}
-                          </div>
-                        )}
-                      </div>
-                      <div className="absolute -bottom-2 -right-2 bg-[#15803d] text-white p-2 rounded-xl shadow-md border-2 border-white">
-                        <Award size={16} />
-                      </div>
+                <div 
+                  key={director.id || i}
+                  className="group bg-white rounded-3xl p-6 md:p-8 border border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(19,71,160,0.12)] hover:border-blue/40 transition-all duration-300 flex flex-col items-center text-center relative overflow-hidden h-full"
+                >
+                  {/* Top gradient highlight accent */}
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue via-[#15803d] to-blue group-hover:h-2.5 transition-all duration-300" />
+                  
+                  {/* Director Photo / Avatar */}
+                  <div className="relative mb-6 pt-2">
+                    <div className="w-36 h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden bg-gradient-to-br from-blue/10 to-[#15803d]/10 border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+                      {director.image ? (
+                        <img
+                          src={getImageUrl(director.image)}
+                          alt={director.name}
+                          className="w-full h-full object-cover object-top"
+                          onError={(e) => { e.target.style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-lora text-3xl md:text-4xl font-black text-blue bg-blue/10">
+                          {initials}
+                        </div>
+                      )}
                     </div>
-
-                    {/* Director Name */}
-                    <h3 className="font-lora text-xl md:text-2xl font-bold text-ink group-hover:text-blue transition-colors duration-200 leading-snug mb-3">
-                      {director.name}
-                    </h3>
-
-                    {/* Position / Designation */}
-                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue/10 text-blue border border-blue/20 rounded-full text-xs font-bold uppercase tracking-wider">
-                      <Briefcase size={13} className="shrink-0 text-blue" />
-                      <span>{director.position}</span>
+                    <div className="absolute -bottom-2 -right-2 bg-[#15803d] text-white p-2 rounded-xl shadow-md border-2 border-white">
+                      <Award size={16} />
                     </div>
                   </div>
-                </Reveal>
+
+                  {/* Director Name */}
+                  <h3 className="font-lora text-xl md:text-2xl font-bold text-ink group-hover:text-blue transition-colors duration-200 leading-snug mb-3">
+                    {director.name}
+                  </h3>
+
+                  {/* Position / Designation */}
+                  <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue/10 text-blue border border-blue/20 rounded-full text-xs font-bold uppercase tracking-wider">
+                    <Briefcase size={13} className="shrink-0 text-blue" />
+                    <span>{director.position}</span>
+                  </div>
+                </div>
               );
             })}
           </div>

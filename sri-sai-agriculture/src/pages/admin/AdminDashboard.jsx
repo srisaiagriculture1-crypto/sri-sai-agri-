@@ -40,7 +40,9 @@ import {
   MessageSquare,
   MessageCircle,
   FileText,
-  Receipt
+  Receipt,
+  Key,
+  ShieldCheck
 } from 'lucide-react';
 
 const API_URL = '/api';
@@ -92,6 +94,7 @@ export default function AdminDashboard() {
   const [filterAcademicYear, setFilterAcademicYear] = useState('all');
   const [filterYearLevel, setFilterYearLevel] = useState('all');
   const [staffList, setStaffList] = useState([]);
+  const [receptionistList, setReceptionistList] = useState([]);
   
   // Fee Management Notifications state
   const [paymentProofs, setPaymentProofs] = useState([]);
@@ -281,6 +284,7 @@ export default function AdminDashboard() {
     { id: 'feeNotifications', label: 'Fee Notifications', icon: Bell },
     { id: 'imports', label: 'Excel Imports', icon: FileSpreadsheet },
     { id: 'staff', label: 'Staff Accounts', icon: Users },
+    { id: 'receptionist', label: 'Receptionist Accounts', icon: Key },
     { id: 'hero', label: 'Hero Slider Management', icon: LayoutDashboard },
     { id: 'directors', label: 'Board of Directors', icon: Award },
     { id: 'faculty', label: 'Faculty Management', icon: Users },
@@ -356,6 +360,13 @@ export default function AdminDashboard() {
       const res = await axios.get(`${API_URL}/staff/admin/list`, { withCredentials: true });
       setStaffList(res.data);
     } catch (err) { console.error(err); }
+  };
+
+  const fetchReceptionists = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/receptionist/admin/list`, { withCredentials: true });
+      setReceptionistList(res.data);
+    } catch (err) { console.error("fetchReceptionists error:", err); }
   };
 
   const saveSetting = async (key, value) => {
@@ -531,6 +542,8 @@ export default function AdminDashboard() {
         fetchExcelImports();
       } else if (activeTab === "staff") {
         fetchStaff();
+      } else if (activeTab === "receptionist") {
+        fetchReceptionists();
       } else {
         fetchData();
       }
@@ -1171,7 +1184,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex gap-3">
-              {activeTab !== 'enquiries' && activeTab !== 'staff' && activeTab !== 'feeNotifications' && activeTab !== 'online-registrations' && activeTab !== 'settings' && activeTab !== 'imports' && (
+              {activeTab !== 'enquiries' && activeTab !== 'staff' && activeTab !== 'receptionist' && activeTab !== 'feeNotifications' && activeTab !== 'online-registrations' && activeTab !== 'settings' && activeTab !== 'imports' && (
                 <button 
                   onClick={() => {
                     if (viewMode === 'form' || viewMode === 'student-manage') {
@@ -2569,6 +2582,34 @@ export default function AdminDashboard() {
                 }
               }}
             />
+          ) : activeTab === 'receptionist' ? (
+            <ReceptionistManagementView
+              receptionistList={receptionistList}
+              onRefresh={fetchReceptionists}
+              onCreate={async (recData) => {
+                try {
+                  await axios.post(`${API_URL}/receptionist/admin/create`, recData, { withCredentials: true });
+                  fetchReceptionists();
+                  alert('Receptionist account created successfully!');
+                } catch (err) { alert(err.response?.data?.message || 'Create failed'); }
+              }}
+              onUpdate={async (id, updateData) => {
+                try {
+                  await axios.put(`${API_URL}/receptionist/admin/update/${id}`, updateData, { withCredentials: true });
+                  fetchReceptionists();
+                  alert('Receptionist credentials updated successfully!');
+                } catch (err) { alert(err.response?.data?.message || 'Update failed'); }
+              }}
+              onDelete={async (id) => {
+                if (window.confirm('Delete this receptionist login credential? They will no longer be able to log in to the Receptionist Admin Panel.')) {
+                  try {
+                    await axios.delete(`${API_URL}/receptionist/admin/delete/${id}`, { withCredentials: true });
+                    fetchReceptionists();
+                    alert('Receptionist account deleted.');
+                  } catch (err) { alert('Delete failed: ' + (err.response?.data?.message || err.message)); }
+                }
+              }}
+            />
           ) : activeTab === 'settings' ? (
             <SettingsView
               settings={siteSettings}
@@ -3153,6 +3194,317 @@ function StaffManagementView({ staffList, onRefresh, onCreate, onDelete }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+function ReceptionistManagementView({ receptionistList, onRefresh, onCreate, onUpdate, onDelete }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
+  const [showPass, setShowPass] = useState(false);
+  const [newRec, setNewRec] = useState({ name: '', username: '', password: '', phone: '' });
+  const [editForm, setEditForm] = useState({ name: '', username: '', password: '', phone: '', status: 'Active' });
+  const [saving, setSaving] = useState(false);
+
+  const handleCreate = async () => {
+    if (!newRec.name || !newRec.username || !newRec.password) {
+      alert('Please fill Full Name, Login Username, and Password');
+      return;
+    }
+    setSaving(true);
+    await onCreate(newRec);
+    setNewRec({ name: '', username: '', password: '', phone: '' });
+    setShowAdd(false);
+    setSaving(false);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingAccount) return;
+    setSaving(true);
+    await onUpdate(editingAccount.id, editForm);
+    setEditingAccount(null);
+    setSaving(false);
+  };
+
+  return (
+    <div className="animate-fadeIn p-8 space-y-8">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue/10 flex items-center justify-center text-blue">
+              <Key size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-ink">Receptionist Admin Panel Logins</h3>
+              <p className="text-[11px] text-muted font-bold tracking-wider mt-0.5 uppercase">
+                Total: {(receptionistList || []).length} Accounts • Controls access to <span className="text-blue">/receptionist/dashboard</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <a
+            href="/receptionist/dashboard"
+            target="_blank"
+            rel="noreferrer"
+            className="px-5 py-3 bg-sky2 text-blue font-black text-xs uppercase tracking-wider rounded-2xl hover:bg-blue hover:text-white transition-all flex items-center gap-2 border border-blue/20"
+          >
+            <ExternalLink size={15} /> Open Portal
+          </a>
+          <button
+            onClick={() => { setShowAdd(v => !v); setEditingAccount(null); }}
+            className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg ${showAdd ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-blue text-white shadow-blue/20 hover:bg-ink'}`}
+          >
+            {showAdd ? <><X size={16} /> Cancel</> : <><Plus size={16} /> Add Receptionist Login</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Add New Receptionist Form */}
+      {showAdd && (
+        <div className="bg-white p-8 rounded-3xl border-2 border-blue/20 shadow-xl space-y-6 animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+              <h4 className="font-black text-ink text-sm uppercase tracking-widest">Create New Receptionist Login Credentials</h4>
+              <p className="text-xs text-muted mt-1">This user will be able to log in to the Receptionist Admin Panel to manage staff attendance.</p>
+            </div>
+            <button onClick={() => setShowAdd(false)} className="p-2 text-gray-400 hover:text-ink"><X size={18} /></button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name / Desk Title *</label>
+              <input
+                required
+                placeholder="e.g. Front Desk Lead / P. Anitha"
+                value={newRec.name}
+                onChange={e => setNewRec({ ...newRec, name: e.target.value })}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Login Username / ID *</label>
+              <input
+                required
+                placeholder="e.g. srisai2026 or reception_front"
+                value={newRec.username}
+                onChange={e => setNewRec({ ...newRec, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Login Password *</label>
+              <div className="relative">
+                <input
+                  required
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Enter strong password"
+                  value={newRec.password}
+                  onChange={e => setNewRec({ ...newRec, password: e.target.value })}
+                  className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-ink transition-colors"
+                >
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Contact Phone Number (Optional)</label>
+              <input
+                placeholder="e.g. 9876543210"
+                value={newRec.phone}
+                onChange={e => setNewRec({ ...newRec, phone: e.target.value })}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all font-medium text-sm"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleCreate}
+            disabled={saving}
+            className="w-full bg-[#15803d] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#166534] transition-all shadow-lg shadow-green-500/20 active:scale-[0.99] disabled:opacity-50"
+          >
+            {saving ? 'Creating Account...' : 'Confirm & Create Receptionist Account'}
+          </button>
+        </div>
+      )}
+
+      {/* Edit Receptionist Credentials Modal */}
+      {editingAccount && (
+        <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl space-y-6 animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h4 className="font-black text-ink text-base">Edit Receptionist Credentials</h4>
+                <p className="text-xs text-muted">ID #{editingAccount.id} • {editingAccount.username}</p>
+              </div>
+              <button onClick={() => setEditingAccount(null)} className="p-2 text-gray-400 hover:text-ink"><X size={18} /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Login Username</label>
+                <input
+                  value={editForm.username}
+                  onChange={e => setEditForm({ ...editForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">New Password (Leave blank to keep unchanged)</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={editForm.password}
+                  onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Contact Phone</label>
+                <input
+                  value={editForm.phone}
+                  onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Account Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue focus:outline-none text-sm font-medium"
+                >
+                  <option value="Active">Active (Can Login)</option>
+                  <option value="Inactive">Inactive (Disabled)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setEditingAccount(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-gray-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={saving}
+                className="flex-1 py-3 bg-blue text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-ink transition-all shadow-lg shadow-blue/20 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Accounts Registry Table */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h4 className="font-black text-ink text-sm uppercase tracking-widest">Active Receptionist Credentials</h4>
+            <p className="text-xs text-muted mt-0.5">Use these credentials on <span className="font-mono text-blue">/receptionist/dashboard</span></p>
+          </div>
+          <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-blue rounded-xl hover:bg-sky transition-all">
+            <RefreshCw size={16} />
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Receptionist / Desk Name</th>
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Login Username</th>
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact</th>
+                <th className="px-6 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {!(receptionistList || []).length ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-16 text-center text-gray-400 font-bold text-xs uppercase tracking-widest">
+                    No receptionist accounts registered yet. Click "Add Receptionist Login" above.
+                  </td>
+                </tr>
+              ) : (
+                receptionistList.map(rec => (
+                  <tr key={rec.id} className="hover:bg-sky/30 transition-colors">
+                    <td className="px-6 py-4 font-bold text-ink">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue/10 text-blue font-black text-xs flex items-center justify-center">
+                          {rec.name ? rec.name[0].toUpperCase() : 'R'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-ink">{rec.name}</p>
+                          <p className="text-[10px] text-muted">ID: #{rec.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-mono font-bold text-blue text-xs">
+                      <span className="px-2.5 py-1 bg-blue/10 rounded-lg">{rec.username}</span>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-semibold text-muted">
+                      {rec.phone || '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${rec.status === 'Active' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                        {rec.status || 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingAccount(rec);
+                            setEditForm({ name: rec.name || '', username: rec.username || '', password: '', phone: rec.phone || '', status: rec.status || 'Active' });
+                          }}
+                          className="p-2 text-blue hover:bg-blue/10 rounded-xl transition-all"
+                          title="Edit Credentials"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => onDelete(rec.id)}
+                          className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                          title="Delete Account"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -4397,7 +4749,6 @@ function AdmissionEnquiriesView() {
                             currentStatus === 'New' ? 'bg-red-50 text-red-600 border-red-200' :
                             currentStatus === 'Contacted' ? 'bg-blue/10 text-blue border-blue/30' :
                             currentStatus === 'Interested' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                            currentStatus === 'Admitted' ? 'bg-green-50 text-green-700 border-green-300' :
                             'bg-gray-100 text-gray-600 border-gray-200'
                           }`}
                         >

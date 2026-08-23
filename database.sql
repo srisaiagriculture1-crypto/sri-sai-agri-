@@ -184,11 +184,19 @@ CREATE TABLE IF NOT EXISTS directors (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     position VARCHAR(255) NOT NULL,
-    qualification VARCHAR(255),
-    experience VARCHAR(255),
-    message TEXT,
     image VARCHAR(255),
-    order_num INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 15. Receptionist Accounts Table
+CREATE TABLE IF NOT EXISTS receptionists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'Active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
