@@ -25,29 +25,34 @@ export default function StaffDashboard() {
   const API_URL = "/api";
 
   const calculateAcademicYear = (enrolledYearStr, currentYearField) => {
-    if (currentYearField) {
-      const lower = currentYearField.toLowerCase();
-      if (lower.includes('1st')) return '1st Year';
-      if (lower.includes('2nd')) return '2nd Year';
-      if (lower.includes('3rd')) return '3rd Year';
-      if (lower.includes('4th')) return '4th Year';
+    // 1. Calculate from Academic Enrolled Year string (e.g., "2022-2026", "2022", "2023", "2024", "2025", "2026")
+    if (enrolledYearStr) {
+      const match = String(enrolledYearStr).match(/\d{4}/);
+      if (match) {
+        const startYear = parseInt(match[0], 10);
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth(); // 0-indexed: 0 = Jan, 5 = June, 6 = July (academic session starts July)
+        
+        const activeAcademicStartYear = currentMonth >= 6 ? currentYear : currentYear - 1;
+        const diff = activeAcademicStartYear - startYear;
+        
+        if (diff <= 0) return '1st Year';
+        if (diff === 1) return '2nd Year';
+        if (diff === 2) return '3rd Year';
+        return '4th Year';
+      }
     }
-    if (!enrolledYearStr) return '1st Year';
-    const match = enrolledYearStr.match(/\d{4}/);
-    if (!match) return '1st Year';
-    const startYear = parseInt(match[0], 10);
     
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth(); // 0-indexed: 0 = Jan, 5 = June, 6 = July
-    
-    const activeAcademicStartYear = currentMonth >= 6 ? currentYear : currentYear - 1;
-    const diff = activeAcademicStartYear - startYear;
-    
-    if (diff <= 0) return '1st Year';
-    if (diff === 1) return '2nd Year';
-    if (diff === 2) return '3rd Year';
-    return '4th Year';
+    // 2. Fallback to currentYearField if specified
+    if (currentYearField) {
+      const lower = String(currentYearField).toLowerCase();
+      if (lower.includes('1st') || lower === '1') return '1st Year';
+      if (lower.includes('2nd') || lower === '2') return '2nd Year';
+      if (lower.includes('3rd') || lower === '3') return '3rd Year';
+      if (lower.includes('4th') || lower === '4') return '4th Year';
+    }
+    return '1st Year';
   };
 
   useEffect(() => {
@@ -337,7 +342,7 @@ export default function StaffDashboard() {
             </div>
          </div>
 
-         {/* Filter Panel (Like Super Admin Panel) */}
+         {/* Filter Panel (Matching Super Admin Panel) */}
          {showFilters && (
            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border-2 border-green-500/20 animate-fadeIn space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -355,7 +360,7 @@ export default function StaffDashboard() {
                  )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                  {/* Course Filter */}
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select Course</label>
@@ -364,7 +369,7 @@ export default function StaffDashboard() {
                        value={courseFilter}
                        onChange={(e) => {
                           setCourseFilter(e.target.value);
-                          if (e.target.value !== 'Ag. M.Sc.') setBranchFilter('all');
+                          setBranchFilter('all');
                        }}
                     >
                        <option value="all">ALL COURSES</option>
@@ -373,23 +378,25 @@ export default function StaffDashboard() {
                     </select>
                  </div>
 
-                 {/* Specialization Filter (if M.Sc or all) */}
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Specialization / Branch</label>
-                    <select 
-                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-blue outline-none transition-all font-bold text-ink text-xs appearance-none"
-                       value={branchFilter}
-                       onChange={(e) => setBranchFilter(e.target.value)}
-                    >
-                       <option value="all">ALL SPECIALIZATIONS</option>
-                       <option value="Msc soil science">Msc Soil Science</option>
-                       <option value="Msc horticulture">Msc Horticulture</option>
-                       <option value="Msc agronomy">Msc Agronomy</option>
-                       <option value="Msc plant breeding and genetics">Msc Plant Breeding & Genetics</option>
-                       <option value="Msc zoology">Msc Zoology</option>
-                       <option value="Msc chemistry">Msc Chemistry</option>
-                    </select>
-                 </div>
+                 {/* Specialization Filter - ONLY visible when Ag. M.Sc. is selected */}
+                 {courseFilter === 'Ag. M.Sc.' && (
+                   <div className="space-y-2 animate-fadeIn">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select Specialization (M.Sc.)</label>
+                      <select 
+                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-blue outline-none transition-all font-bold text-ink text-xs appearance-none"
+                         value={branchFilter}
+                         onChange={(e) => setBranchFilter(e.target.value)}
+                      >
+                         <option value="all">ALL SPECIALIZATIONS</option>
+                         <option value="Msc soil science">Msc Soil Science</option>
+                         <option value="Msc horticulture">Msc Horticulture</option>
+                         <option value="Msc agronomy">Msc Agronomy</option>
+                         <option value="Msc plant breeding and genetics">Msc Plant Breeding & Genetics</option>
+                         <option value="Msc zoology">Msc Zoology</option>
+                         <option value="Msc chemistry">Msc Chemistry</option>
+                      </select>
+                   </div>
+                 )}
 
                  {/* Year Level Filter */}
                  <div className="space-y-2">
@@ -519,6 +526,7 @@ export default function StaffDashboard() {
                        filteredStudents.map(student => {
                           const yearLevel = calculateAcademicYear(student.academic_enrolled_year, student.current_year);
                           const currentStatus = attendance[student.id];
+                          const branchText = student.branch && String(student.branch).toLowerCase() !== 'null' && String(student.branch).toLowerCase() !== 'undefined' ? String(student.branch) : '';
 
                           return (
                             <tr key={student.id} className="hover:bg-sky/20 transition-colors">
@@ -537,7 +545,7 @@ export default function StaffDashboard() {
                                   <div className="flex flex-col">
                                      <span className="text-xs font-bold text-ink">{student.course_applied || 'Ag. B.Sc.'}</span>
                                      <span className="text-[10px] text-muted font-semibold">
-                                       {yearLevel} {student.branch ? `• ${student.branch}` : ''}
+                                       {yearLevel}{branchText ? ` • ${branchText}` : ''}
                                      </span>
                                   </div>
                                </td>
