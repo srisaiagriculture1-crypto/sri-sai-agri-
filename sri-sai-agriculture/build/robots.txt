@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /faculty
+Allow: /results
+Allow: /testimonials
+Allow: /activities
+Allow: /hostel
+Allow: /portal/register
+Allow: /portal/login
+
+# Disallow private panels and dashboards from indexing
+Disallow: /super-admin/
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /receptionist/
+Disallow: /portal/dashboard
+Disallow: /portal/reset-password/
+
+# Sitemap Location
+Sitemap: https://srisaiagriculturecollege.com/sitemap.xml
