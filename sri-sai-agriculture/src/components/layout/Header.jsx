@@ -109,15 +109,20 @@ function NavDropdown({ label, href, items, onClose }) {
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const navItems = [
     { type: "link", label: "Home",    href: "/" },
     { type: "link", label: "About",   href: "/about" },
     {
       type: "dropdown", label: "Programs", href: "/about",
-      items: coursesList,
+      items: [
+        { label: "B.Sc Agriculture",  href: "/about" },
+        { divider: true },
+        { label: "M.Sc Agriculture",  href: "/about" },
+        { label: "M.Sc Biology",      href: "/about" },
+        { label: "M.Sc Chemistry",    href: "/about" },
+        { label: "M.Sc Zoology",      href: "/about" },
+      ],
     },
     { type: "link", label: "Faculty",  href: "/faculty" },
     { type: "link", label: "Results",  href: "/results" },
