@@ -141,25 +141,23 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-[#e2e8f0] sticky top-0 z-[200]
       shadow-[0_2px_12px_rgba(0,0,0,.07)]">
-      <div className="max-w-site mx-auto px-3 xs:px-5 md:px-7 flex items-center justify-between h-[74px] sm:h-[80px] md:h-[90px] gap-2 sm:gap-4 md:gap-5">
+      <div className="max-w-site mx-auto px-4 sm:px-6 md:px-7 flex items-center justify-between h-[74px] sm:h-[80px] md:h-[90px] gap-3">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 no-underline min-w-0 flex-shrink group">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
-             <img 
-               src="/logo.png" 
-               alt="Sri Sai Agri Institute Logo" 
-               className="h-[38px] xs:h-[48px] md:h-[58px] w-auto flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
-             />
-            <div className="flex flex-col leading-tight min-w-0">
-              <span className="font-lora text-[0.8rem] xs:text-[1rem] md:text-[1.2rem] font-bold text-blue tracking-tight uppercase truncate">Sri Sai Institute</span>
-              <span className="text-[0.46rem] xs:text-[0.6rem] md:text-[0.65rem] font-black text-[#94a3b8] tracking-[0.08em] xs:tracking-[0.14em] -mt-0.5 uppercase truncate">Of Agriculture Sciences</span>
-            </div>
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 no-underline flex-shrink-0 group">
+          <img 
+            src="/logo.png" 
+            alt="Sri Sai Agri Institute Logo" 
+            className="h-[44px] sm:h-[48px] md:h-[58px] w-auto flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="flex flex-col leading-tight whitespace-nowrap">
+            <span className="font-lora text-[0.88rem] xs:text-[1rem] md:text-[1.2rem] font-bold text-blue tracking-tight uppercase">Sri Sai Institute</span>
+            <span className="text-[0.52rem] xs:text-[0.6rem] md:text-[0.65rem] font-black text-[#94a3b8] tracking-[0.12em] xs:tracking-[0.14em] -mt-0.5 uppercase">Of Agriculture Sciences</span>
           </div>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-[2px]">
+        <nav className="hidden lg:flex items-center gap-[2px] xl:gap-1.5 flex-shrink-0">
           {navItems.map((item, i) =>
             item.type === "dropdown"
               ? <NavDropdown key={i} label={item.label} href={item.href} items={item.items} />
@@ -167,19 +165,19 @@ export default function Header() {
           )}
 
           <a href={`tel:${siteConfig.phones[0]}`}
-            className="flex items-center gap-[6px] border-[1.5px] border-[#e2e8f0] text-ink
-              px-[14px] py-[9px] rounded-lg font-semibold text-[0.81rem] no-underline
+            className="flex items-center gap-[5px] border-[1.5px] border-[#e2e8f0] text-ink
+              px-2.5 xl:px-[14px] py-[8px] xl:py-[9px] rounded-lg font-semibold text-[0.78rem] xl:text-[0.81rem] no-underline
               transition-all duration-200 whitespace-nowrap
               hover:border-blue hover:text-blue hover:bg-sky">
             <PhoneIcon /> Call Us
           </a>
 
           <Link to="/portal/register"
-            className="flex items-center gap-2 border-[1.5px] border-orange/20 text-orange
-              px-[14px] py-[9px] rounded-lg font-bold text-[0.81rem] no-underline
+            className="flex items-center gap-1.5 border-[1.5px] border-orange/20 text-orange
+              px-2.5 xl:px-[14px] py-[8px] xl:py-[9px] rounded-lg font-bold text-[0.78rem] xl:text-[0.81rem] no-underline
               transition-all duration-200 whitespace-nowrap bg-orange/5
               hover:bg-orange hover:text-white hover:border-orange">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                <circle cx="8.5" cy="7" r="4"></circle>
                <line x1="20" y1="8" x2="20" y2="14"></line>
@@ -189,11 +187,11 @@ export default function Header() {
           </Link>
 
           <Link to="/portal/login"
-            className="flex items-center gap-2 border-[1.5px] border-blue/20 text-blue
-              px-[14px] py-[9px] rounded-lg font-bold text-[0.81rem] no-underline
+            className="flex items-center gap-1.5 border-[1.5px] border-blue/20 text-blue
+              px-2.5 xl:px-[14px] py-[8px] xl:py-[9px] rounded-lg font-bold text-[0.78rem] xl:text-[0.81rem] no-underline
               transition-all duration-200 whitespace-nowrap bg-sky/30
               hover:bg-blue hover:text-white hover:border-blue">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
@@ -202,7 +200,7 @@ export default function Header() {
 
           <button
             onClick={scrollToContact}
-            className="bg-orange text-white px-5 py-[10px] rounded-lg font-bold text-[0.83rem]
+            className="bg-orange text-white px-3.5 xl:px-5 py-[8px] xl:py-[10px] rounded-lg font-bold text-[0.8rem] xl:text-[0.83rem]
               border-none cursor-pointer shadow-[0_4px_12px_rgba(224,92,26,.28)] transition-all duration-200
               whitespace-nowrap hover:bg-[#c94f14] hover:-translate-y-[1px]
               hover:shadow-[0_6px_18px_rgba(224,92,26,.38)]">

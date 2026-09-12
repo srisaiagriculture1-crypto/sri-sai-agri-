@@ -5,7 +5,7 @@ export const siteConfig = {
   motto:       "Empowering the Future of Agriculture.",
   philosophy:  "Excellence in Agricultural Education & Research",
   legacy:      "9 Years of Academic Excellence",
-  accreditation: "Recognised by Govt. of T.S.",
+  accreditation: "Recognised by Govt. of A.P. & Affiliated to Lucknow University",
   phones: ["7550252015", "6281084741", "7997882246"],
   phonesDisplay: "7550252015 / 6281084741 / 7997882246",
   email:   "srisaiagriculture1@gmail.com",
