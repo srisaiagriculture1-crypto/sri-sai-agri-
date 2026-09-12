@@ -9,15 +9,16 @@ export default function AnnouncementBar() {
         px-2.5 py-[2px] sm:px-3 sm:py-[3px] rounded-full text-[0.65rem] sm:text-[0.7rem] font-bold tracking-[.05em] sm:tracking-[.07em] uppercase whitespace-nowrap flex-shrink-0">
         🎓 Admissions Open 2026–27
       </span>
-      <span className="flex items-center gap-1 flex-wrap justify-center text-center">
+      <a
+        href="#enquiry"
+        onClick={scrollToContact}
+        className="flex items-center gap-1.5 flex-wrap justify-center text-center text-white no-underline group cursor-pointer"
+      >
         <span>Limited Seats Available&nbsp;–</span>
-        <button
-          onClick={scrollToContact}
-          className="text-[#fde68a] hover:text-white font-bold underline bg-transparent border-none p-0 cursor-pointer text-[0.72rem] sm:text-[0.78rem] inline-flex items-center transition-colors"
-        >
+        <span className="text-[#fde68a] group-hover:text-white font-bold underline text-[0.72rem] sm:text-[0.78rem] inline-flex items-center transition-colors">
           Enquire Now →
-        </button>
-      </span>
+        </span>
+      </a>
     </div>
   );
 }

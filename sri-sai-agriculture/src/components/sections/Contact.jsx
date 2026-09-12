@@ -63,7 +63,7 @@ export default function Contact() {
 
 
   return (
-    <section id="contact" className="py-[60px] md:py-[78px] bg-white">
+    <section id="contact" className="py-[60px] md:py-[78px] bg-white scroll-mt-20">
       <div className="max-w-site mx-auto px-5 md:px-7">
         <Reveal className="mb-10 md:mb-11">
           <SectionHeader label="⑦ Contact & Location" title='Find Us &amp; Begin<br/>Your <em>Journey Today</em>' />
@@ -94,7 +94,7 @@ export default function Contact() {
           </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="bg-cream border-[1.5px] border-[#e2e8f0] rounded-[18px] p-6 md:p-8 relative overflow-hidden">
+            <div id="enquiry" className="bg-cream border-[1.5px] border-[#e2e8f0] rounded-[18px] p-6 md:p-8 relative overflow-hidden scroll-mt-24">
               <div className="absolute top-0 left-0 right-0 h-1 rounded-t-[18px]"
                 style={{ background: "linear-gradient(90deg,#15803d,#dc2626)" }} />
 

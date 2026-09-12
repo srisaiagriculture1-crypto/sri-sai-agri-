@@ -32,13 +32,17 @@ export default function App() {
   useScrollReveal([location.pathname]);
 
   useEffect(() => {
-    if (location.hash === "#contact") {
+    if (location.hash === "#contact" || location.hash === "#enquiry") {
       setTimeout(() => {
-        const el = document.getElementById("contact");
+        const el = document.getElementById("enquiry") || document.getElementById("contact");
         if (el) {
-          const yOffset = -80;
+          const yOffset = -90;
           const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
           window.scrollTo({ top: y, behavior: "smooth" });
+          setTimeout(() => {
+            const input = el.querySelector("input");
+            if (input) input.focus({ preventScroll: true });
+          }, 350);
         }
       }, 150);
     }
