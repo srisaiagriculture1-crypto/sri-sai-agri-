@@ -209,9 +209,20 @@ export default function Header() {
         </nav>
 
         {/* Mobile: CTA + Hamburger */}
-        <div className="flex lg:hidden items-center gap-1 sm:gap-2">
+        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+          <Link to="/portal/login"
+            className="flex items-center gap-1.5 border-[1.5px] border-blue/30 text-blue
+              px-2.5 py-[6px] sm:px-3 sm:py-[7px] rounded-lg font-bold text-[0.75rem] sm:text-[0.8rem]
+              no-underline bg-sky/30 hover:bg-blue hover:text-white transition-colors whitespace-nowrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Portal</span>
+          </Link>
+
           <a href="#contact"
-            className="hidden sm:inline-block bg-orange text-white px-4 py-[9px] rounded-lg font-bold text-[0.8rem]
+            className="hidden sm:inline-block bg-orange text-white px-3 sm:px-4 py-[7px] sm:py-[9px] rounded-lg font-bold text-[0.78rem] sm:text-[0.8rem]
               no-underline whitespace-nowrap">
             Enquire
           </a>
@@ -250,6 +261,26 @@ export default function Header() {
               )
           )}
           <div className="border-t border-[#e2e8f0] mt-2 pt-3 flex flex-col gap-2">
+            <Link to="/portal/login" onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 bg-blue text-white px-4 py-[11px] rounded-lg font-bold text-[0.88rem] no-underline shadow-[0_2px_8px_rgba(26,86,219,.25)] hover:bg-blue2 transition-colors">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Student Portal Login
+            </Link>
+
+            <Link to="/portal/register" onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 border-[1.5px] border-orange/40 text-orange bg-orange/5 px-4 py-[10px] rounded-lg font-bold text-[0.88rem] no-underline hover:bg-orange hover:text-white transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                 <circle cx="8.5" cy="7" r="4"></circle>
+                 <line x1="20" y1="8" x2="20" y2="14"></line>
+                 <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              Student Register
+            </Link>
+
             <a href={`tel:${siteConfig.phones[0]}`}
               className="flex items-center gap-2 px-3 py-[10px] text-[0.88rem] font-semibold
                 text-ink no-underline rounded-lg border border-[#e2e8f0] hover:border-blue
