@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { siteConfig } from "../../data/siteConfig";
+import { scrollToContact } from "../../utils/scroll";
 
 function PhoneIcon() {
   return (
@@ -108,20 +109,15 @@ function NavDropdown({ label, href, items, onClose }) {
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { type: "link", label: "Home",    href: "/" },
     { type: "link", label: "About",   href: "/about" },
     {
       type: "dropdown", label: "Programs", href: "/about",
-      items: [
-        { label: "B.Sc Agriculture",  href: "/about" },
-        { divider: true },
-        { label: "M.Sc Agriculture",  href: "/about" },
-        { label: "M.Sc Biology",      href: "/about" },
-        { label: "M.Sc Chemistry",    href: "/about" },
-        { label: "M.Sc Zoology",      href: "/about" },
-      ],
+      items: coursesList,
     },
     { type: "link", label: "Faculty",  href: "/faculty" },
     { type: "link", label: "Results",  href: "/results" },
@@ -140,19 +136,19 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-[#e2e8f0] sticky top-0 z-[200]
       shadow-[0_2px_12px_rgba(0,0,0,.07)]">
-      <div className="max-w-site mx-auto px-7 flex items-center justify-between h-[80px] md:h-[90px] gap-5">
+      <div className="max-w-site mx-auto px-3 xs:px-5 md:px-7 flex items-center justify-between h-[74px] sm:h-[80px] md:h-[90px] gap-2 sm:gap-4 md:gap-5">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 md:gap-3 no-underline flex-shrink-0 max-w-[70%] sm:max-w-none group">
-          <div className="flex items-center gap-3 flex-shrink-0">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 no-underline min-w-0 flex-shrink group">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
              <img 
                src="/logo.png" 
                alt="Sri Sai Agri Institute Logo" 
-               className="h-[48px] md:h-[58px] w-auto transition-transform duration-300 group-hover:scale-105"
+               className="h-[38px] xs:h-[48px] md:h-[58px] w-auto flex-shrink-0 transition-transform duration-300 group-hover:scale-105"
              />
-            <div className="flex flex-col leading-tight">
-              <span className="font-lora text-[0.85rem] xs:text-[1rem] md:text-[1.2rem] font-bold text-blue tracking-tight uppercase">Sri Sai Institute</span>
-              <span className="text-[0.5rem] xs:text-[0.6rem] md:text-[0.65rem] font-black text-[#94a3b8] tracking-[0.14em] -mt-0.5 uppercase">Of Agriculture Sciences</span>
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="font-lora text-[0.8rem] xs:text-[1rem] md:text-[1.2rem] font-bold text-blue tracking-tight uppercase truncate">Sri Sai Institute</span>
+              <span className="text-[0.46rem] xs:text-[0.6rem] md:text-[0.65rem] font-black text-[#94a3b8] tracking-[0.08em] xs:tracking-[0.14em] -mt-0.5 uppercase truncate">Of Agriculture Sciences</span>
             </div>
           </div>
         </Link>
@@ -199,33 +195,35 @@ export default function Header() {
             Student Portal
           </Link>
 
-          <a href="#contact"
+          <button
+            onClick={scrollToContact}
             className="bg-orange text-white px-5 py-[10px] rounded-lg font-bold text-[0.83rem]
-              no-underline shadow-[0_4px_12px_rgba(224,92,26,.28)] transition-all duration-200
+              border-none cursor-pointer shadow-[0_4px_12px_rgba(224,92,26,.28)] transition-all duration-200
               whitespace-nowrap hover:bg-[#c94f14] hover:-translate-y-[1px]
               hover:shadow-[0_6px_18px_rgba(224,92,26,.38)]">
             Admission Enquiry
-          </a>
+          </button>
         </nav>
 
         {/* Mobile: CTA + Hamburger */}
-        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <Link to="/portal/login"
-            className="flex items-center gap-1.5 border-[1.5px] border-blue/30 text-blue
-              px-2.5 py-[6px] sm:px-3 sm:py-[7px] rounded-lg font-bold text-[0.75rem] sm:text-[0.8rem]
-              no-underline bg-sky/30 hover:bg-blue hover:text-white transition-colors whitespace-nowrap">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            className="flex items-center gap-1 border-[1.5px] border-blue/30 text-blue
+              px-2 py-[5px] sm:px-3 sm:py-[7px] rounded-lg font-bold text-[0.72rem] sm:text-[0.8rem]
+              no-underline bg-sky/30 hover:bg-blue hover:text-white transition-colors whitespace-nowrap flex-shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <span>Portal</span>
           </Link>
 
-          <a href="#contact"
+          <button
+            onClick={scrollToContact}
             className="hidden sm:inline-block bg-orange text-white px-3 sm:px-4 py-[7px] sm:py-[9px] rounded-lg font-bold text-[0.78rem] sm:text-[0.8rem]
-              no-underline whitespace-nowrap">
+              border-none cursor-pointer whitespace-nowrap shadow-sm hover:bg-[#c94f14] transition-colors">
             Enquire
-          </a>
+          </button>
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -287,11 +285,12 @@ export default function Header() {
                 hover:text-blue hover:bg-sky transition-colors">
               <PhoneIcon /> {siteConfig.phones[0]}
             </a>
-            <a href="/#contact" onClick={() => setMenuOpen(false)}
+            <button
+              onClick={(e) => { setMenuOpen(false); scrollToContact(e); }}
               className="bg-orange text-white px-4 py-[11px] rounded-lg font-bold text-[0.88rem]
-                no-underline text-center">
+                border-none cursor-pointer text-center w-full shadow-sm hover:bg-[#c94f14] transition-colors">
               Admission Enquiry
-            </a>
+            </button>
           </div>
         </div>
       )}

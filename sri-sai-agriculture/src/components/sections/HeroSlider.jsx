@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useSlider } from "../../hooks/useSlider";
 import { getImageUrl } from "../../utils/imageUrl";
+import { scrollToContact } from "../../utils/scroll";
 
 const FALLBACK_SLIDES = [
   {
@@ -93,7 +94,7 @@ export default function HeroSlider() {
   }
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ minHeight: "88vh" }}>
+    <div className="relative w-full overflow-hidden min-h-[580px] xs:min-h-[600px] sm:min-h-[640px] md:min-h-[88vh] flex items-center">
       {slides.map((s, i) => (
         <div key={i}
           className="absolute inset-0 w-full transition-opacity duration-[800ms] ease-in-out flex items-center"
@@ -118,9 +119,9 @@ export default function HeroSlider() {
           </div>
 
           {/* Content */}
-          <div className="relative z-[2] w-full max-w-site mx-auto px-5 md:px-7
+          <div className="relative z-[2] w-full max-w-site mx-auto px-4 sm:px-6 md:px-7
             grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-12 items-center
-            pt-16 pb-16 lg:pt-0 lg:pb-0">
+            pt-10 pb-16 sm:py-16 lg:py-0">
 
             <div className="w-full">
               {/* Tag */}
@@ -156,10 +157,15 @@ export default function HeroSlider() {
               <div className="flex flex-col sm:flex-row gap-3">
                 {s.btn1 && (
                   <a href={s.btn1.href}
+                    onClick={(e) => {
+                      if (s.btn1.href === "#contact" || s.btn1.href.endsWith("#contact")) {
+                        scrollToContact(e);
+                      }
+                    }}
                     className="inline-flex items-center justify-center gap-2 bg-white text-ink
                       px-5 py-3 rounded-[9px] font-bold text-[0.85rem] no-underline
                       transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,.14)]
-                      hover:-translate-y-[2px] hover:shadow-[0_8px_24px_rgba(0,0,0,.20)]">
+                      hover:-translate-y-[2px] hover:shadow-[0_8px_24px_rgba(0,0,0,.20)] cursor-pointer">
                     {s.btn1.label}
                   </a>
                 )}

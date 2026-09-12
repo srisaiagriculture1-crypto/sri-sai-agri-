@@ -1,5 +1,6 @@
 import Reveal from "../ui/Reveal";
 import { siteConfig } from "../../data/siteConfig";
+import { scrollToContact } from "../../utils/scroll";
 
 export default function CTABand() {
   return (
@@ -23,10 +24,11 @@ export default function CTABand() {
         <Reveal delay={0.15}>
           <div className="flex gap-3 flex-wrap flex-shrink-0">
             <a href="#contact"
+              onClick={scrollToContact}
               className="inline-flex items-center gap-2 bg-orange text-white px-[22px] md:px-[26px]
                 py-[12px] md:py-[14px] rounded-[10px] font-bold text-[0.88rem] md:text-[0.9rem]
                 no-underline transition-all duration-200 shadow-[0_6px_18px_rgba(224,92,26,.38)]
-                hover:bg-[#c94f14] hover:-translate-y-[2px]">
+                hover:bg-[#c94f14] hover:-translate-y-[2px] cursor-pointer">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>

@@ -3,6 +3,7 @@ import axios from "axios";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import Reveal from "../ui/Reveal";
 import SectionHeader from "../ui/SectionHeader";
+import { scrollToContact } from "../../utils/scroll";
 
 const API_URL = '';
 
@@ -70,7 +71,8 @@ function ProgramCard({ p, delay = 0 }) {
 
           <div className="flex items-center justify-between mt-[14px] pt-[14px] border-t border-[#e2e8f0]">
             <a href="#contact"
-              className="text-[0.8rem] font-bold no-underline flex items-center gap-1 transition-all duration-200 hover:gap-2"
+              onClick={scrollToContact}
+              className="text-[0.8rem] font-bold no-underline flex items-center gap-1 transition-all duration-200 hover:gap-2 cursor-pointer"
               style={{ color: "#15803d" }}>
               Enquire for {p.stream} →
             </a>

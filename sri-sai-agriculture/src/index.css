@@ -3,12 +3,26 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+  }
   body {
     font-family: 'Sora', sans-serif;
     background-color: #fafaf7;
     color: #374151;
     overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    position: relative;
+  }
+  #root {
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    position: relative;
   }
   * { box-sizing: border-box; }
 }

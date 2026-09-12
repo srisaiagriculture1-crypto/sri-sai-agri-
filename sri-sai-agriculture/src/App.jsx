@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useScrollReveal } from "./hooks/useScrollReveal";
 
@@ -30,11 +31,24 @@ export default function App() {
   const location = useLocation();
   useScrollReveal([location.pathname]);
 
+  useEffect(() => {
+    if (location.hash === "#contact") {
+      setTimeout(() => {
+        const el = document.getElementById("contact");
+        if (el) {
+          const yOffset = -80;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: "smooth" });
+        }
+      }, 150);
+    }
+  }, [location]);
+
   const isAdminPanel = location.pathname.startsWith('/super-admin') || location.pathname.startsWith('/admin');
   const isPortal = location.pathname.startsWith('/portal') || location.pathname.startsWith('/staff') || location.pathname.startsWith('/receptionist');
 
   return (
-    <div className="min-h-screen bg-cream font-sora text-[#374151]">
+    <div className="min-h-screen bg-cream font-sora text-[#374151] overflow-x-hidden w-full max-w-full relative">
       {/* ── Top fixed layers ── */}
       {!isAdminPanel && !isPortal && (
         <>
@@ -45,7 +59,7 @@ export default function App() {
       )}
 
       {/* ── Main content with Routing ── */}
-      <main>
+      <main className="w-full max-w-full overflow-x-hidden">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<AboutPage />} />
