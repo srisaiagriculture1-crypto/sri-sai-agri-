@@ -22,71 +22,99 @@ export default function StudentDashboard() {
   const courseYears = isMsc ? ['1st year', '2nd year'] : ['1st year', '2nd year', '3rd year', '4th year'];
 
 
-  const downloadFeeInvoice = (payment, studentData) => {
+  const loadImage = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  };
+
+  const downloadFeeInvoice = async (payment, studentData) => {
     try {
       const doc = new jsPDF("p", "pt", "a4");
       const greenColor = [21, 128, 61];
 
-      // Header Banner
+      // Header Banner (Height: 96pt)
       doc.setFillColor(...greenColor);
-      doc.rect(0, 0, 595.28, 90, "F");
+      doc.rect(0, 0, 595.28, 96, "F");
 
+      // Load & Render College Website Logo
+      const logoImg = await loadImage("/logo.png");
+      if (logoImg) {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(35, 16, 64, 64, 8, 8, "F");
+        try {
+          doc.addImage(logoImg, "PNG", 38, 19, 58, 58);
+        } catch (imgErr) {
+          console.warn("Logo addImage fallback:", imgErr);
+        }
+      }
+
+      const textStartX = logoImg ? 110 : 40;
+
+      // College Title & Subheaders (Left side, safe width)
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("SRI SAI INSTITUTE OF AGRICULTURAL SCIENCES", 40, 40);
+      doc.setFontSize(13);
+      doc.text("SRI SAI INSTITUTE OF AGRICULTURAL SCIENCES", textStartX, 38);
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text("OFFICIAL FEE PAYMENT RECEIPT & INVOICE", 40, 58);
-      doc.text("Sri Sai Agricultural College, Andhra Pradesh", 40, 72);
+      doc.setFontSize(8.5);
+      doc.text("OFFICIAL FEE PAYMENT RECEIPT & INVOICE", textStartX, 54);
+      doc.text("Sri Sai Agricultural College, Andhra Pradesh", textStartX, 68);
+      doc.text("Approved by Govt. of AP | Affiliated Institution", textStartX, 81);
 
+      // Receipt Metadata (Right aligned with safe spacing)
       const receiptNo = `INV-${new Date(payment.created_at || Date.now()).getFullYear()}-${String(payment.id || Math.floor(Math.random() * 90000 + 10000)).padStart(6, '0')}`;
       const paidDate = payment.created_at ? new Date(payment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-GB');
 
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
-      doc.text(`RECEIPT NO: ${receiptNo}`, 555, 45, { align: "right" });
+      doc.text(`RECEIPT NO: ${receiptNo}`, 560, 38, { align: "right" });
       doc.setFont("helvetica", "normal");
-      doc.text(`DATE: ${paidDate}`, 555, 60, { align: "right" });
-      doc.text(`STATUS: ${String(payment.status || 'APPROVED').toUpperCase()}`, 555, 75, { align: "right" });
+      doc.text(`DATE: ${paidDate}`, 560, 54, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.text(`STATUS: ${String(payment.status || 'APPROVED').toUpperCase()}`, 560, 70, { align: "right" });
 
       // Student Info Card
       doc.setFillColor(248, 250, 252);
-      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "F");
+      doc.roundedRect(40, 115, 515.28, 85, 8, 8, "F");
       doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(40, 110, 515.28, 85, 8, 8, "D");
+      doc.roundedRect(40, 115, 515.28, 85, 8, 8, "D");
 
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("STUDENT DETAILS", 55, 130);
+      doc.text("STUDENT DETAILS", 55, 135);
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Student Name:", 55, 148);
+      doc.text("Student Name:", 55, 153);
       doc.setFont("helvetica", "normal");
-      doc.text(studentData?.student_name || "N/A", 140, 148);
+      doc.text(studentData?.student_name || "N/A", 145, 153);
 
       doc.setFont("helvetica", "bold");
-      doc.text("Roll / ID No:", 55, 164);
+      doc.text("Roll / ID No:", 55, 169);
       doc.setFont("helvetica", "normal");
-      doc.text(String(studentData?.roll_no || studentData?.id || "N/A"), 140, 164);
+      doc.text(String(studentData?.roll_no || studentData?.id || "N/A"), 145, 169);
 
       doc.setFont("helvetica", "bold");
-      doc.text("Course & Branch:", 55, 180);
+      doc.text("Course & Branch:", 55, 185);
       doc.setFont("helvetica", "normal");
-      doc.text(`${studentData?.course_applied || 'B.Sc. Agriculture'} (${studentData?.branch || 'General'})`, 140, 180);
+      doc.text(`${studentData?.course_applied || 'B.Sc. Agriculture'} (${studentData?.branch || 'General'})`, 145, 185);
 
       doc.setFont("helvetica", "bold");
-      doc.text("Academic Year:", 320, 148);
+      doc.text("Academic Year:", 330, 153);
       doc.setFont("helvetica", "normal");
-      doc.text(payment.academic_year || "1st year", 410, 148);
+      doc.text(payment.academic_year || "1st year", 420, 153);
 
       doc.setFont("helvetica", "bold");
-      doc.text("Contact Mobile:", 320, 164);
+      doc.text("Contact Mobile:", 330, 169);
       doc.setFont("helvetica", "normal");
-      doc.text(studentData?.mobile1 || "N/A", 410, 164);
+      doc.text(studentData?.mobile1 || "N/A", 420, 169);
 
       // Particulars Table
       const tableHeaders = [["S.NO", "FEE DESCRIPTION / CATEGORY", "ACADEMIC YEAR", "PAYMENT STATUS", "AMOUNT PAID"]];
@@ -101,7 +129,7 @@ export default function StudentDashboard() {
       autoTable(doc, {
         head: tableHeaders,
         body: tableRows,
-        startY: 215,
+        startY: 220,
         margin: { left: 40, right: 40 },
         theme: 'grid',
         headStyles: {
@@ -124,7 +152,7 @@ export default function StudentDashboard() {
         }
       });
 
-      const finalY = (doc.lastAutoTable?.previous?.finalY || 270) + 25;
+      const finalY = (doc.lastAutoTable?.previous?.finalY || 275) + 25;
 
       // Summary Total Box
       doc.setFillColor(240, 253, 244);
@@ -139,21 +167,21 @@ export default function StudentDashboard() {
       doc.setFontSize(12);
       doc.text(`Rs. ${Number(payment.amount || 0).toLocaleString('en-IN')}/-`, 540, finalY + 27, { align: "right" });
 
-      // Verification footer
-      const noticeY = finalY + 75;
-      doc.setTextColor(100, 116, 139);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.text("Note: This is a computer-generated fee payment receipt issued by Sri Sai Agricultural College Management.", 40, noticeY);
-      doc.text("No physical signature required. Verification ID: " + Math.random().toString(36).substring(2, 10).toUpperCase(), 40, noticeY + 12);
+      // Verification footer (System Generated Notice - No Signature Block)
+      const noticeY = finalY + 65;
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(40, noticeY, 515.28, 40, 6, 6, "F");
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(40, noticeY, 515.28, 40, 6, 6, "D");
 
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(15, 23, 42);
-      doc.text("AUTHORISED SIGNATORY", 555, noticeY + 40, { align: "right" });
+      doc.text("OFFICIAL SYSTEM-GENERATED RECEIPT", 55, noticeY + 16);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text("Sri Sai Agricultural College Accounts Dept.", 555, noticeY + 52, { align: "right" });
+      doc.setFontSize(7.5);
+      doc.text("This is an electronically generated fee payment receipt issued by Sri Sai Agricultural College Management.", 55, noticeY + 28);
+      doc.text("Valid without physical signature | Verification ID: " + Math.random().toString(36).substring(2, 10).toUpperCase(), 540, noticeY + 28, { align: "right" });
 
       doc.save(`Fee_Receipt_${studentData?.roll_no || 'Student'}_${payment.fee_type || 'Fee'}.pdf`);
     } catch(e) {
