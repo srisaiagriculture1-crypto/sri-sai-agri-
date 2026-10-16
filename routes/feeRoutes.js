@@ -10,7 +10,26 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
   const { fees } = req.body; // Array of fee objects for different years
 
   try {
-    for (const fee of fees) {
+    // Check if student is M.Sc
+    const [stRows] = await pool.query("SELECT course_applied FROM students WHERE id = ?", [studentId]);
+    const isMsc = stRows.length > 0 && (
+      (stRows[0].course_applied || '').toLowerCase().includes('m.sc') || 
+      (stRows[0].course_applied || '').toLowerCase().includes('msc')
+    );
+
+    // If M.Sc, strictly purge any 3rd year / 4th year records
+    if (isMsc) {
+      await pool.query(
+        "DELETE FROM student_fees WHERE student_id = ? AND (LOWER(academic_year) LIKE '%3rd%' OR LOWER(academic_year) LIKE '%4th%')",
+        [studentId]
+      );
+    }
+
+    const validFees = isMsc 
+      ? fees.filter(f => !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim()))
+      : fees;
+
+    for (const fee of validFees) {
       const year = fee.academic_year || '1st year';
       const [existing] = await pool.query(
         "SELECT id FROM student_fees WHERE student_id = ? AND LOWER(academic_year) = LOWER(?)",
@@ -85,10 +104,20 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
 // Get Fees for a student
 router.get("/:studentId", async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM student_fees WHERE student_id = ? ORDER BY academic_year ASC",
-      [req.params.studentId]
+    const [stRows] = await pool.query("SELECT course_applied FROM students WHERE id = ?", [req.params.studentId]);
+    const isMsc = stRows.length > 0 && (
+      (stRows[0].course_applied || '').toLowerCase().includes('m.sc') || 
+      (stRows[0].course_applied || '').toLowerCase().includes('msc')
     );
+
+    let query = "SELECT * FROM student_fees WHERE student_id = ?";
+    let params = [req.params.studentId];
+    if (isMsc) {
+      query += " AND LOWER(academic_year) NOT LIKE '%3rd%' AND LOWER(academic_year) NOT LIKE '%4th%'";
+    }
+    query += " ORDER BY academic_year ASC";
+
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     res.status(400).json({ message: err.message });

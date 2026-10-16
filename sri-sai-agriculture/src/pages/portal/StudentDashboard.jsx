@@ -18,6 +18,9 @@ export default function StudentDashboard() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const navigate = useNavigate();
 
+  const isMsc = (student?.course_applied || '').toLowerCase().includes('m.sc') || (student?.course_applied || '').toLowerCase().includes('msc');
+  const courseYears = isMsc ? ['1st year', '2nd year'] : ['1st year', '2nd year', '3rd year', '4th year'];
+
 
   const downloadFeeInvoice = (payment, studentData) => {
     try {
@@ -406,7 +409,9 @@ export default function StudentDashboard() {
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
-                                 {student.student_fees.map((fee, fIdx) => (
+                                 {student.student_fees
+                                    .filter(f => !isMsc || !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim()))
+                                    .map((fee, fIdx) => (
                                     <tr key={fIdx} className="hover:bg-gray-50/50">
                                        <td className="p-3 font-black text-ink uppercase text-[10px]">{fee.academic_year}</td>
                                        <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_total_fee || 0).toLocaleString()}</td>
@@ -497,7 +502,9 @@ export default function StudentDashboard() {
                           </tr>
                        </thead>
                        <tbody className="divide-y divide-gray-50">
-                          {student.student_fees?.map((fee, idx) => {
+                          {student.student_fees
+                             ?.filter(f => !isMsc || !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim()))
+                             .map((fee, idx) => {
                              const { allocated, paid, pendingPaid, balance } = getFeeStats(fee, selectedFeeType);
                              
                              return (
@@ -774,7 +781,7 @@ export default function StudentDashboard() {
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-gray-100">
-                              {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                              {courseYears.map((year) => {
                                  const fee = student.student_fees.find(f => (f.academic_year || '').toLowerCase() === year.toLowerCase()) || {
                                     academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
                                  };
@@ -846,8 +853,8 @@ export default function StudentDashboard() {
                        <option value="" disabled>Select Year</option>
                        <option value="1st year">1st Year</option>
                        <option value="2nd year">2nd Year</option>
-                       <option value="3rd year">3rd Year</option>
-                       <option value="4th year">4th Year</option>
+                       {!isMsc && <option value="3rd year">3rd Year</option>}
+                       {!isMsc && <option value="4th year">4th Year</option>}
                     </select>
                  </div>
 

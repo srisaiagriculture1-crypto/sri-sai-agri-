@@ -86,6 +86,7 @@ export default function AdminDashboard() {
 
   const [formData, setFormData] = useState({});
   const [file, setFile] = useState(null);
+  const [bulkFiles, setBulkFiles] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [galleryFilter, setGalleryFilter] = useState('all');
   const [studentFilter, setStudentFilter] = useState('all');
@@ -108,7 +109,13 @@ export default function AdminDashboard() {
   const [pendingFeeProofsCount, setPendingFeeProofsCount] = useState(0);
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
 
-  const calculateAcademicYear = (enrolledYearStr) => {
+  const getCourseYears = (course) => {
+    const isMsc = (course || '').toLowerCase().includes('m.sc') || (course || '').toLowerCase().includes('msc');
+    return isMsc ? ['1st year', '2nd year'] : ['1st year', '2nd year', '3rd year', '4th year'];
+  };
+
+  const calculateAcademicYear = (enrolledYearStr, courseApplied) => {
+    const isMsc = (courseApplied || '').toLowerCase().includes('m.sc') || (courseApplied || '').toLowerCase().includes('msc');
     if (!enrolledYearStr) return '1st Year';
     const match = enrolledYearStr.match(/\d{4}/);
     if (!match) return '1st Year';
@@ -123,6 +130,7 @@ export default function AdminDashboard() {
     const diff = activeAcademicStartYear - startYear;
     
     if (diff <= 0) return '1st Year';
+    if (isMsc) return '2nd Year';
     if (diff === 1) return '2nd Year';
     if (diff === 2) return '3rd Year';
     return '4th Year';
@@ -658,6 +666,38 @@ export default function AdminDashboard() {
       return;
     }
 
+    if (activeTab === 'gallery' && bulkFiles.length > 1 && !editingId) {
+      setLoading(true);
+      try {
+        const bulkPayload = new FormData();
+        bulkPayload.append('label', formData.label || '');
+        bulkPayload.append('sub_label', formData.sub_label || '');
+        bulkPayload.append('category', formData.category || 'internship');
+        bulkPayload.append('type', formData.type || 'image');
+        bulkFiles.forEach(f => {
+          bulkPayload.append('images', f);
+        });
+
+        const res = await axios.post(`${API_URL}/gallery/bulk`, bulkPayload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+
+        alert(`🎉 Bulk Upload Successful!\n${res.data.count || bulkFiles.length} assets have been added to the Gallery.`);
+        setFormData({});
+        setFile(null);
+        setBulkFiles([]);
+        setEditingId(null);
+        setViewMode('list');
+        setRefresh(r => r + 1);
+      } catch (err) {
+        alert("Bulk upload failed: " + (err.response?.data?.message || err.message));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     const payload = new FormData();
     Object.keys(formData).forEach(key => {
       if (!['_id', 'id', 'image', 'created_at', 'existing_image'].includes(key)) {
@@ -716,7 +756,9 @@ export default function AdminDashboard() {
       });
 
       if (activeTab === 'students' && !editingId && res.data.studentId) {
-        await axios.put(`${API_URL}/student-fees/admin/update/${res.data.studentId}`, { fees: studentFees }, { withCredentials: true });
+        const allowedYears = getCourseYears(formData.course_applied).map(y => y.toLowerCase());
+        const feesToSave = studentFees.filter(f => allowedYears.includes((f.academic_year || '').toLowerCase().trim()));
+        await axios.put(`${API_URL}/student-fees/admin/update/${res.data.studentId}`, { fees: feesToSave }, { withCredentials: true });
         fetchStudents();
         fetchNotificationCounts();
       }
@@ -1194,15 +1236,15 @@ export default function AdminDashboard() {
                       setEditingId(null);
                       setFormData({});
                       setFile(null);
+                      setBulkFiles([]);
                     } else {
                       setViewMode('form');
+                      setBulkFiles([]);
                       if (activeTab === 'students') {
-                        setStudentFees([
-                          { academic_year: '1st year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
-                          { academic_year: '2nd year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
-                          { academic_year: '3rd year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
-                          { academic_year: '4th year', total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 },
-                        ]);
+                        const years = getCourseYears(formData.course_applied);
+                        setStudentFees(years.map(y => ({
+                          academic_year: y, total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0
+                        })));
                       }
                     }
                   }}
@@ -1312,7 +1354,7 @@ export default function AdminDashboard() {
                      </div>
                      <button 
                         type="button"
-                        onClick={() => { setViewMode('list'); setEditingId(null); setFormData({}); setFile(null); }}
+                        onClick={() => { setViewMode('list'); setEditingId(null); setFormData({}); setFile(null); setBulkFiles([]); }}
                         className="flex items-center gap-3 px-8 py-4 bg-white text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-500/5 hover:bg-red-50 transition-all border border-red-50 shrink-0"
                      >
                         <X size={18} /> Back to List
@@ -1477,6 +1519,22 @@ export default function AdminDashboard() {
 
                   {activeTab === 'gallery' && (
                     <>
+                      {!editingId && (
+                        <div className="col-span-full bg-blue/5 border border-blue/15 p-4 rounded-2xl flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-blue/10 flex items-center justify-center text-blue font-bold text-sm">📁</div>
+                            <div>
+                              <p className="text-xs font-black text-ink uppercase tracking-wide">Bulk Upload Supported</p>
+                              <p className="text-[11px] text-muted font-medium">You can select multiple photos/videos below (Hold Ctrl or Shift). All assets will be assigned this label and category.</p>
+                            </div>
+                          </div>
+                          {bulkFiles.length > 1 && (
+                            <span className="px-3 py-1 bg-green-100 text-green-700 font-black text-xs rounded-xl border border-green-200">
+                              {bulkFiles.length} files selected
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Asset Label</label>
                         <input required placeholder="Activity Title" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue/5 focus:border-blue focus:outline-none transition-all" onChange={e => setFormData({...formData, label: e.target.value})} value={formData.label || ''} />
@@ -1563,6 +1621,13 @@ export default function AdminDashboard() {
                               course_applied: val,
                               branch: val === 'Ag. B.Sc.' ? 'NULL' : ''
                             });
+                            const targetYears = getCourseYears(val);
+                            setStudentFees(prev => {
+                              return targetYears.map(year => {
+                                const found = prev.find(f => (f.academic_year || '').toLowerCase() === year.toLowerCase());
+                                return found || { academic_year: year, total_fee: 0, paid_amount: 0, admission_fee: 0, admission_fee_paid: 0, committed_fee: 0, practical_fee: 0, practical_fee_paid: 0, hostel_fee: 0, hostel_fee_paid: 0, exam_fee: 0, exam_fee_paid: 0, travelling_fee: 0, travelling_fee_paid: 0 };
+                              });
+                            });
                           }} 
                           value={formData.course_applied || ''}
                         >
@@ -1639,7 +1704,7 @@ export default function AdminDashboard() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                              {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                              {getCourseYears(formData.course_applied).map((year) => {
                                 const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
                                   academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
                                 };
@@ -1686,7 +1751,40 @@ export default function AdminDashboard() {
 
                   {activeTab !== 'courses' && activeTab !== 'students' && (
                       <div className="relative p-10 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/50 text-center hover:border-blue/50 hover:bg-blue/5 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
-                        {file || formData.existing_image ? (
+                        {bulkFiles.length > 0 ? (
+                          <div className="w-full flex flex-col items-center mb-3">
+                            <span className="px-4 py-1.5 bg-green-100 text-green-800 text-xs font-black rounded-full uppercase tracking-wider mb-3 border border-green-200 shadow-sm">
+                              📦 Bulk Upload Mode: {bulkFiles.length} Assets Selected
+                            </span>
+                            <div className="flex flex-wrap gap-2 justify-center max-w-lg max-h-44 overflow-y-auto p-3 bg-white rounded-2xl border border-gray-100 shadow-sm mb-2">
+                              {bulkFiles.slice(0, 10).map((bf, idx) => (
+                                <div key={idx} className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0 relative group">
+                                  {bf.type.startsWith('video/') ? (
+                                    <div className="w-full h-full bg-slate-800 flex items-center justify-center text-[9px] font-black text-white uppercase">VIDEO</div>
+                                  ) : (
+                                    <img src={URL.createObjectURL(bf)} alt={bf.name} className="w-full h-full object-cover" />
+                                  )}
+                                </div>
+                              ))}
+                              {bulkFiles.length > 10 && (
+                                <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-black text-gray-500">
+                                  +{bulkFiles.length - 10}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBulkFiles([]);
+                                setFile(null);
+                              }}
+                              className="text-xs text-red-500 hover:text-red-700 font-bold underline transition-colors"
+                            >
+                              ✕ Clear Selection
+                            </button>
+                          </div>
+                        ) : (file || formData.existing_image) ? (
                           <div className="w-full max-h-48 overflow-hidden rounded-xl mb-4 shadow-sm border border-gray-100 flex justify-center bg-black/5">
                             {file ? (
                                file.type.startsWith('video/') ? (
@@ -1718,20 +1816,43 @@ export default function AdminDashboard() {
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-bold text-ink">{file ? file.name : (formData.existing_image ? 'Replace Current Media' : (activeTab === 'gallery' ? 'Upload Photo or Video Asset' : 'Upload Media Asset'))}</p>
-                          <p className="text-xs text-muted mt-1">{activeTab === 'gallery' ? 'Supports JPG, PNG, WEBP, MP4, WEBM (up to 50MB)' : 'Recommended size: 800x600px. Max 5MB.'}</p>
+                          <p className="text-sm font-bold text-ink">
+                            {bulkFiles.length > 0 
+                              ? `${bulkFiles.length} Assets Queued for Upload` 
+                              : (file ? file.name : (formData.existing_image ? 'Replace Current Media' : (activeTab === 'gallery' ? 'Upload Photo or Video Asset(s)' : 'Upload Media Asset')))}
+                          </p>
+                          <p className="text-xs text-muted mt-1">
+                            {activeTab === 'gallery' 
+                              ? (bulkFiles.length > 0 ? 'Click to select a different batch of files' : 'Select one or multiple photos/videos (Hold Ctrl or Shift to select bulk). Max 50MB each.') 
+                              : 'Recommended size: 800x600px. Max 5MB.'}
+                          </p>
                         </div>
                         <input 
                           type="file" 
+                          multiple={activeTab === 'gallery' && !editingId}
                           accept={activeTab === 'gallery' ? "image/*,video/*,.mp4,.mov,.webm,.mkv" : "image/*"}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                           onChange={e => {
-                            const selected = e.target.files[0];
-                            if (selected) {
-                              setFile(selected);
-                              if (activeTab === 'gallery') {
-                                const isVid = selected.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(selected.name);
+                            if (activeTab === 'gallery' && !editingId) {
+                              const selectedList = Array.from(e.target.files || []);
+                              if (selectedList.length > 1) {
+                                setBulkFiles(selectedList);
+                                setFile(null);
+                              } else if (selectedList.length === 1) {
+                                setFile(selectedList[0]);
+                                setBulkFiles([]);
+                                const isVid = selectedList[0].type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(selectedList[0].name);
                                 setFormData(prev => ({ ...prev, type: isVid ? 'video' : 'image' }));
+                              }
+                            } else {
+                              const selected = e.target.files[0];
+                              if (selected) {
+                                setFile(selected);
+                                setBulkFiles([]);
+                                if (activeTab === 'gallery') {
+                                  const isVid = selected.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(selected.name);
+                                  setFormData(prev => ({ ...prev, type: isVid ? 'video' : 'image' }));
+                                }
                               }
                             }
                           }} 
@@ -1742,7 +1863,7 @@ export default function AdminDashboard() {
 
                 <div className="mt-12">
                   <button type="submit" disabled={loading} className="w-full bg-[#15803d] text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-green-500/20 hover:bg-[#166534] transition-all active:scale-[0.98] disabled:opacity-50">
-                    {loading ? 'Processing...' : (editingId ? 'Update Record' : 'Sync & Create Entry')}
+                    {loading ? 'Processing...' : (bulkFiles.length > 1 ? `Sync & Upload ${bulkFiles.length} Assets in Bulk` : (editingId ? 'Update Record' : 'Sync & Create Entry'))}
                   </button>
                 </div>
               </form>
@@ -1858,6 +1979,9 @@ export default function AdminDashboard() {
                               course_applied: val,
                               branch: val === 'Ag. B.Sc.' ? 'NULL' : ''
                             });
+                            if ((val || '').toLowerCase().includes('m.sc') || (val || '').toLowerCase().includes('msc')) {
+                              setStudentFees(prev => prev.filter(f => !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim())));
+                            }
                           }} 
                           value={formData.course_applied || ''}
                         >
@@ -1957,7 +2081,7 @@ export default function AdminDashboard() {
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-50">
-                                 {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                                 {getCourseYears(formData.course_applied || selectedStudent?.course_applied).map((year) => {
                                     const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
                                        academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
                                     };
@@ -2011,7 +2135,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div className="grid grid-cols-1 gap-8">
-                          {['1st year', '2nd year', '3rd year', '4th year'].map((year) => {
+                          {getCourseYears(formData.course_applied || selectedStudent?.course_applied).map((year) => {
                             const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
                               academic_year: year, 
                               total_fee: 0, paid_amount: 0, 
@@ -2151,7 +2275,10 @@ export default function AdminDashboard() {
                                     headers: { 'Content-Type': 'multipart/form-data' },
                                     withCredentials: true
                                  });
-                                 await axios.put(`/api/student-fees/admin/update/${selectedStudent.id}`, { fees: studentFees }, {
+                                 const currentCourse = formData.course_applied || selectedStudent?.course_applied;
+                                 const allowedYears = getCourseYears(currentCourse).map(y => y.toLowerCase());
+                                 const feesToSave = studentFees.filter(f => allowedYears.includes((f.academic_year || '').toLowerCase().trim()));
+                                 await axios.put(`/api/student-fees/admin/update/${selectedStudent.id}`, { fees: feesToSave }, {
                                     withCredentials: true
                                  });
                                  alert("Student Account & Fee Breakdown Updated Successfully!");
@@ -2383,8 +2510,8 @@ export default function AdminDashboard() {
                              <option value="all">ALL YEARS</option>
                              <option value="1st Year">1ST YEAR</option>
                              <option value="2nd Year">2ND YEAR</option>
-                             <option value="3rd Year">3RD YEAR</option>
-                             <option value="4th Year">4TH YEAR</option>
+                             {studentFilter !== 'Ag. M.Sc.' && <option value="3rd Year">3RD YEAR</option>}
+                             {studentFilter !== 'Ag. M.Sc.' && <option value="4th Year">4TH YEAR</option>}
                           </select>
                        </div>
                     </div>
@@ -2420,7 +2547,7 @@ export default function AdminDashboard() {
                     .filter(student => studentFilter === 'all' || student.course_applied === studentFilter)
                     .filter(student => studentBranchFilter === 'all' || student.branch === studentBranchFilter)
                     .filter(student => filterAcademicYear === 'all' || !filterAcademicYear || (student.academic_enrolled_year && student.academic_enrolled_year.includes(filterAcademicYear)))
-                    .filter(student => filterYearLevel === 'all' || calculateAcademicYear(student.academic_enrolled_year) === filterYearLevel)
+                    .filter(student => filterYearLevel === 'all' || calculateAcademicYear(student.academic_enrolled_year, student.course_applied) === filterYearLevel)
                     .map(student => (
                      <div key={student.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
                        <div className="flex items-center gap-4 mb-4">

@@ -201,7 +201,11 @@ router.get("/profile", async (req, res) => {
     if (!student) return res.status(404).json({ message: "Student not found" });
 
     const [qualifications] = await pool.query("SELECT * FROM qualifications WHERE student_id = ?", [student.id]);
-    const [fees] = await pool.query("SELECT * FROM student_fees WHERE student_id = ?", [student.id]);
+    const isMsc = (student.course_applied || '').toLowerCase().includes('m.sc') || (student.course_applied || '').toLowerCase().includes('msc');
+    let [fees] = await pool.query("SELECT * FROM student_fees WHERE student_id = ? ORDER BY academic_year ASC", [student.id]);
+    if (isMsc) {
+      fees = fees.filter(f => !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim()));
+    }
 
     // Calculate attendance percentage
     const [attRows] = await pool.query(

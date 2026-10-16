@@ -22,6 +22,51 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Bulk Add gallery items (Protected)
+router.post("/bulk", authenticate, upload.array("images", 100), async (req, res) => {
+  const { label, sub_label, category, type } = req.body;
+  const files = req.files || [];
+
+  if (!files || files.length === 0) {
+    return res.status(400).json({ message: "No images provided for upload" });
+  }
+
+  try {
+    const insertedIds = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const imagePath = f.path.replace(/\\/g, "/");
+      let mediaType = type;
+      if (!mediaType || mediaType === 'image') {
+        if (f.mimetype.startsWith('video') || /\.(mp4|webm|mov|mkv|ogg)$/i.test(f.originalname)) {
+          mediaType = 'video';
+        } else {
+          mediaType = 'image';
+        }
+      }
+
+      const itemLabel = label ? label.trim() : f.originalname.replace(/\.[^/.]+$/, "");
+      const itemSubLabel = sub_label ? sub_label.trim() : "";
+      const itemCategory = category ? category.trim() : "general";
+
+      const [result] = await pool.query(
+        "INSERT INTO gallery (image, label, sub_label, category, type) VALUES (?, ?, ?, ?, ?)",
+        [imagePath, itemLabel, itemSubLabel, itemCategory, mediaType]
+      );
+      insertedIds.push(result.insertId);
+    }
+
+    res.status(201).json({
+      message: `Successfully uploaded ${insertedIds.length} gallery assets!`,
+      count: insertedIds.length,
+      ids: insertedIds
+    });
+  } catch (err) {
+    console.error("Bulk gallery upload failed:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Add gallery item (Protected)
 router.post("/", authenticate, upload.single("image"), async (req, res) => {
   const { label, sub_label, category, type } = req.body;

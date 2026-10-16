@@ -521,7 +521,7 @@ export default function StudentRegister() {
                      {[
                        "I know that the fee paid towards Admission Fee is not refundable in any case. Cancellation of Admission or Settlement of account is as per conditions maintain by the management. If my ward / visitor misbehave or create any disturbance in the campus, The ward concerned will be transferred to the day scholar campus or else will be terminated. The institution will not bare any kind of responsibility for my ward's behaviour outside of the campus. If my ward leaves the campus without attaining permission from the administrative authorities of the campus concerned, the actions on the part of the student may result in the transfer from the residential campus to the day scholar campus or else terminated from the institution.",
                        "Fee paid towards admission fee is not refundable as per the norms and conditions of the management.",
-                       "If want to shift my ward to other institution before completion of 4 years course, I shall pay back of the concession given at the time of admission.",
+                       `If want to shift my ward to other institution before completion of ${(formData.course_applied || '').toLowerCase().includes('m.sc') ? '2' : '4'} years course, I shall pay back of the concession given at the time of admission.`,
                        "Fee concession if offered will be valued for that academic year only.",
                        "Permission will be granted given to any ward if he / she wishes to go out from the campus in case of emergency with prior permission of the parents.",
                        "5000 SHOULD BE PAID FOR SECURITY DEPOSIT AND IT WILL BE REFUNDED AFTER THE COLLEGE COMPLETION."

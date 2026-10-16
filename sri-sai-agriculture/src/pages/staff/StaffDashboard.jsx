@@ -24,7 +24,8 @@ export default function StaffDashboard() {
 
   const API_URL = "/api";
 
-  const calculateAcademicYear = (enrolledYearStr, currentYearField) => {
+  const calculateAcademicYear = (enrolledYearStr, currentYearField, courseApplied) => {
+    const isMsc = (courseApplied || '').toLowerCase().includes('m.sc') || (courseApplied || '').toLowerCase().includes('msc');
     // 1. Calculate from Academic Enrolled Year string (e.g., "2022-2026", "2022", "2023", "2024", "2025", "2026")
     if (enrolledYearStr) {
       const match = String(enrolledYearStr).match(/\d{4}/);
@@ -38,6 +39,7 @@ export default function StaffDashboard() {
         const diff = activeAcademicStartYear - startYear;
         
         if (diff <= 0) return '1st Year';
+        if (isMsc) return '2nd Year';
         if (diff === 1) return '2nd Year';
         if (diff === 2) return '3rd Year';
         return '4th Year';
@@ -49,6 +51,7 @@ export default function StaffDashboard() {
       const lower = String(currentYearField).toLowerCase();
       if (lower.includes('1st') || lower === '1') return '1st Year';
       if (lower.includes('2nd') || lower === '2') return '2nd Year';
+      if (isMsc) return '2nd Year';
       if (lower.includes('3rd') || lower === '3') return '3rd Year';
       if (lower.includes('4th') || lower === '4') return '4th Year';
     }
@@ -260,7 +263,7 @@ export default function StaffDashboard() {
     )
     .filter(s => courseFilter === 'all' || (s.course_applied || '').toLowerCase() === courseFilter.toLowerCase())
     .filter(s => branchFilter === 'all' || (s.branch || '').toLowerCase() === branchFilter.toLowerCase())
-    .filter(s => yearLevelFilter === 'all' || calculateAcademicYear(s.academic_enrolled_year, s.current_year).toLowerCase() === yearLevelFilter.toLowerCase())
+    .filter(s => yearLevelFilter === 'all' || calculateAcademicYear(s.academic_enrolled_year, s.current_year, s.course_applied).toLowerCase() === yearLevelFilter.toLowerCase())
     .filter(s => {
       if (statusFilter === 'all') return true;
       const currentStatus = (attendance[s.id] || 'Not Marked').toLowerCase();
@@ -409,8 +412,8 @@ export default function StaffDashboard() {
                        <option value="all">ALL YEARS</option>
                        <option value="1st Year">1ST YEAR</option>
                        <option value="2nd Year">2ND YEAR</option>
-                       <option value="3rd Year">3RD YEAR</option>
-                       <option value="4th Year">4TH YEAR</option>
+                       {courseFilter !== 'Ag. M.Sc.' && <option value="3rd Year">3RD YEAR</option>}
+                       {courseFilter !== 'Ag. M.Sc.' && <option value="4th Year">4TH YEAR</option>}
                     </select>
                  </div>
 
