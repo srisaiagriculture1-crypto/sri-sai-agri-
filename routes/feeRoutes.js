@@ -36,6 +36,13 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
         [studentId, year]
       );
 
+      const totalFee = Number(fee.total_fee) > 0 ? Number(fee.total_fee) : (Number(fee.committed_fee) || Number(fee.breakdown_total_fee) || 0);
+      const practicalFee = Number(fee.practical_fee) > 0 ? Number(fee.practical_fee) : (Number(fee.breakdown_practical_fee) || 0);
+      const hostelFee = Number(fee.hostel_fee) > 0 ? Number(fee.hostel_fee) : (Number(fee.breakdown_hostel_fee) || 0);
+      const travellingFee = Number(fee.travelling_fee) > 0 ? Number(fee.travelling_fee) : (Number(fee.breakdown_travelling_fee) || 0);
+      const admissionFee = Number(fee.admission_fee || 0);
+      const examFee = Number(fee.exam_fee || 0);
+
       if (existing.length > 0) {
         await pool.query(
           `UPDATE student_fees SET 
@@ -51,12 +58,12 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
             payment_status = ?
           WHERE student_id = ? AND LOWER(academic_year) = LOWER(?)`,
           [
-            Number(fee.total_fee || 0), Number(fee.paid_amount || 0),
-            Number(fee.admission_fee || 0), Number(fee.admission_fee_paid || 0),
-            Number(fee.hostel_fee || 0), Number(fee.hostel_fee_paid || 0),
-            Number(fee.exam_fee || 0), Number(fee.exam_fee_paid || 0),
-            Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
-            Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
+            totalFee, Number(fee.paid_amount || 0),
+            admissionFee, Number(fee.admission_fee_paid || 0),
+            hostelFee, Number(fee.hostel_fee_paid || 0),
+            examFee, Number(fee.exam_fee_paid || 0),
+            practicalFee, Number(fee.practical_fee_paid || 0),
+            travellingFee, Number(fee.travelling_fee_paid || 0),
             Number(fee.committed_fee || 0),
             Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
             Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),
@@ -80,12 +87,12 @@ router.put("/admin/update/:studentId", authenticate, async (req, res) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             studentId, year,
-            Number(fee.total_fee || 0), Number(fee.paid_amount || 0),
-            Number(fee.admission_fee || 0), Number(fee.admission_fee_paid || 0),
-            Number(fee.hostel_fee || 0), Number(fee.hostel_fee_paid || 0),
-            Number(fee.exam_fee || 0), Number(fee.exam_fee_paid || 0),
-            Number(fee.practical_fee || 0), Number(fee.practical_fee_paid || 0),
-            Number(fee.travelling_fee || 0), Number(fee.travelling_fee_paid || 0),
+            totalFee, Number(fee.paid_amount || 0),
+            admissionFee, Number(fee.admission_fee_paid || 0),
+            hostelFee, Number(fee.hostel_fee_paid || 0),
+            examFee, Number(fee.exam_fee_paid || 0),
+            practicalFee, Number(fee.practical_fee_paid || 0),
+            travellingFee, Number(fee.travelling_fee_paid || 0),
             Number(fee.committed_fee || 0),
             Number(fee.breakdown_total_fee || 0), Number(fee.breakdown_practical_fee || 0),
             Number(fee.breakdown_hostel_fee || 0), Number(fee.breakdown_travelling_fee || 0),

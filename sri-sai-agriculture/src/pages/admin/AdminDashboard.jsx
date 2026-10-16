@@ -1701,18 +1701,32 @@ export default function AdminDashboard() {
                                 <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Practical Fee</th>
                                 <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Hostel</th>
                                 <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
+                                <th className="p-3 text-[9px] font-black uppercase tracking-widest text-left">Exam Fee</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                               {getCourseYears(formData.course_applied).map((year) => {
                                 const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                                  academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                  academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0, exam_fee: 0
                                 };
                                 const updateFee = (updates) => {
                                   const newFees = [...studentFees];
                                   const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
-                                  if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
-                                  else newFees.push({ ...fee, ...updates });
+                                  const synced = { ...updates };
+                                  if (updates.committed_fee !== undefined || updates.breakdown_total_fee !== undefined) {
+                                    synced.total_fee = updates.committed_fee || updates.breakdown_total_fee;
+                                  }
+                                  if (updates.breakdown_practical_fee !== undefined) {
+                                    synced.practical_fee = updates.breakdown_practical_fee;
+                                  }
+                                  if (updates.breakdown_hostel_fee !== undefined) {
+                                    synced.hostel_fee = updates.breakdown_hostel_fee;
+                                  }
+                                  if (updates.breakdown_travelling_fee !== undefined) {
+                                    synced.travelling_fee = updates.breakdown_travelling_fee;
+                                  }
+                                  if (index >= 0) newFees[index] = { ...newFees[index], ...synced };
+                                  else newFees.push({ ...fee, ...synced });
                                   setStudentFees(newFees);
                                 };
                                 const fields = [
@@ -1722,6 +1736,7 @@ export default function AdminDashboard() {
                                   { key: 'breakdown_practical_fee', placeholder: '0' },
                                   { key: 'breakdown_hostel_fee', placeholder: '0' },
                                   { key: 'breakdown_travelling_fee', placeholder: '0' },
+                                  { key: 'exam_fee', placeholder: '0' },
                                 ];
                                 return (
                                   <tr key={year} className="hover:bg-gray-50/50">
@@ -2078,18 +2093,32 @@ export default function AdminDashboard() {
                                     <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Practical Fee</th>
                                     <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Hostel</th>
                                     <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Travelling Expenses</th>
+                                    <th className="p-4 text-[10px] font-black uppercase tracking-widest text-left">Exam Fee</th>
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-50">
                                  {getCourseYears(formData.course_applied || selectedStudent?.course_applied).map((year) => {
                                     const fee = studentFees.find(f => f.academic_year.toLowerCase() === year.toLowerCase()) || {
-                                       academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                       academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0, exam_fee: 0
                                     };
                                     const updateFee = (updates) => {
                                        const newFees = [...studentFees];
                                        const index = newFees.findIndex(f => f.academic_year.toLowerCase() === year.toLowerCase());
-                                       if (index >= 0) newFees[index] = { ...newFees[index], ...updates };
-                                       else newFees.push({ ...fee, ...updates });
+                                       const synced = { ...updates };
+                                       if (updates.committed_fee !== undefined || updates.breakdown_total_fee !== undefined) {
+                                          synced.total_fee = updates.committed_fee || updates.breakdown_total_fee;
+                                       }
+                                       if (updates.breakdown_practical_fee !== undefined) {
+                                          synced.practical_fee = updates.breakdown_practical_fee;
+                                       }
+                                       if (updates.breakdown_hostel_fee !== undefined) {
+                                          synced.hostel_fee = updates.breakdown_hostel_fee;
+                                       }
+                                       if (updates.breakdown_travelling_fee !== undefined) {
+                                          synced.travelling_fee = updates.breakdown_travelling_fee;
+                                       }
+                                       if (index >= 0) newFees[index] = { ...newFees[index], ...synced };
+                                       else newFees.push({ ...fee, ...synced });
                                        setStudentFees(newFees);
                                     };
                                     const fields = [
@@ -2099,6 +2128,7 @@ export default function AdminDashboard() {
                                        { key: 'breakdown_practical_fee', placeholder: '0' },
                                        { key: 'breakdown_hostel_fee', placeholder: '0' },
                                        { key: 'breakdown_travelling_fee', placeholder: '0' },
+                                       { key: 'exam_fee', placeholder: '0' },
                                     ];
                                     return (
                                        <tr key={year} className="hover:bg-gray-50/50">
@@ -2156,15 +2186,18 @@ export default function AdminDashboard() {
                             };
 
                             const categories = [
-                              { keyTotal: 'total_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
-                              { keyTotal: 'admission_fee', keyPaid: 'admission_fee_paid', label: 'Admission Fee', color: 'indigo' },
-                              { keyTotal: 'hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
-                              { keyTotal: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
-                              { keyTotal: 'practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
-                              { keyTotal: 'travelling_fee', keyPaid: 'travelling_fee_paid', label: 'Travelling Expenses', color: 'emerald' },
+                              { keyTotal: 'total_fee', fallbackKey: 'committed_fee', keyPaid: 'paid_amount', label: 'College Fee', color: 'blue' },
+                              { keyTotal: 'admission_fee', fallbackKey: 'admission_fee', keyPaid: 'admission_fee_paid', label: 'Admission Fee', color: 'indigo' },
+                              { keyTotal: 'hostel_fee', fallbackKey: 'breakdown_hostel_fee', keyPaid: 'hostel_fee_paid', label: 'Hostel Fee', color: 'orange' },
+                              { keyTotal: 'exam_fee', fallbackKey: 'exam_fee', keyPaid: 'exam_fee_paid', label: 'Exam Fee', color: 'purple' },
+                              { keyTotal: 'practical_fee', fallbackKey: 'breakdown_practical_fee', keyPaid: 'practical_fee_paid', label: 'Practical Fee', color: 'teal' },
+                              { keyTotal: 'travelling_fee', fallbackKey: 'breakdown_travelling_fee', keyPaid: 'travelling_fee_paid', label: 'Travelling Expenses', color: 'emerald' },
                             ];
 
-                            const totalAllocated = categories.reduce((sum, c) => sum + Number(fee[c.keyTotal] || 0), 0);
+                            const totalAllocated = categories.reduce((sum, c) => {
+                              const val = Number(fee[c.keyTotal]) > 0 ? Number(fee[c.keyTotal]) : (Number(fee[c.fallbackKey]) || 0);
+                              return sum + val;
+                            }, 0);
                             const totalPaid = categories.reduce((sum, c) => sum + Number(fee[c.keyPaid] || 0), 0);
                             const totalDue = Math.max(0, totalAllocated - totalPaid);
 
@@ -2199,7 +2232,7 @@ export default function AdminDashboard() {
                                 {/* Category Grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                                   {categories.map(cat => {
-                                    const total = Number(fee[cat.keyTotal] || 0);
+                                    const total = Number(fee[cat.keyTotal]) > 0 ? Number(fee[cat.keyTotal]) : (Number(fee[cat.fallbackKey]) || 0);
                                     const paid = Number(fee[cat.keyPaid] || 0);
                                     const due = Math.max(0, total - paid);
 
@@ -2222,7 +2255,7 @@ export default function AdminDashboard() {
                                             <input
                                               type="number"
                                               className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-xl focus:border-blue outline-none font-bold text-ink text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                              value={fee[cat.keyTotal] === 0 || fee[cat.keyTotal] === '0' || !fee[cat.keyTotal] ? '' : fee[cat.keyTotal]}
+                                              value={fee[cat.keyTotal] === 0 || fee[cat.keyTotal] === '0' || !fee[cat.keyTotal] ? (fee[cat.fallbackKey] && fee[cat.fallbackKey] !== '0' ? fee[cat.fallbackKey] : '') : fee[cat.keyTotal]}
                                               placeholder="0"
                                               onFocus={(e) => e.target.select()}
                                               onChange={(e) => updateFee({ [cat.keyTotal]: e.target.value })}

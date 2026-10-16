@@ -169,22 +169,22 @@ export default function StudentDashboard() {
     const normType = (type || '').toLowerCase().trim();
 
     if (normType === 'academic fee' || normType === 'college fee') {
-      allocated = Number(fee.total_fee || 0);
+      allocated = Number(fee.total_fee) > 0 ? Number(fee.total_fee) : (Number(fee.committed_fee) || Number(fee.breakdown_total_fee) || 0);
       directPaid = Number(fee.paid_amount || 0);
     } else if (normType === 'admission fee' || normType === 'admission') {
       allocated = Number(fee.admission_fee || 0);
       directPaid = Number(fee.admission_fee_paid || 0);
     } else if (normType === 'hostel fee') {
-      allocated = Number(fee.hostel_fee || 0);
+      allocated = Number(fee.hostel_fee) > 0 ? Number(fee.hostel_fee) : (Number(fee.breakdown_hostel_fee) || 0);
       directPaid = Number(fee.hostel_fee_paid || 0);
     } else if (normType === 'examination fee' || normType === 'exam fee') {
       allocated = Number(fee.exam_fee || 0);
       directPaid = Number(fee.exam_fee_paid || 0);
     } else if (normType === 'practical fee') {
-      allocated = Number(fee.practical_fee || 0);
+      allocated = Number(fee.practical_fee) > 0 ? Number(fee.practical_fee) : (Number(fee.breakdown_practical_fee) || 0);
       directPaid = Number(fee.practical_fee_paid || 0);
     } else if (normType === 'travelling expenses' || normType === 'travelling fee') {
-      allocated = Number(fee.travelling_fee || 0);
+      allocated = Number(fee.travelling_fee) > 0 ? Number(fee.travelling_fee) : (Number(fee.breakdown_travelling_fee) || 0);
       directPaid = Number(fee.travelling_fee_paid || 0);
     }
 
@@ -198,6 +198,8 @@ export default function StudentDashboard() {
         (normType.includes('academic') && (pType.includes('academic') || pType.includes('college'))) ||
         (normType.includes('college') && (pType.includes('academic') || pType.includes('college'))) ||
         (normType.includes('travelling') && pType.includes('travelling')) ||
+        (normType.includes('practical') && pType.includes('practical')) ||
+        (normType.includes('hostel') && pType.includes('hostel')) ||
         (normType.includes('exam') && pType.includes('exam'));
 
       return typeMatches && pYear === fYear;
@@ -406,6 +408,7 @@ export default function StudentDashboard() {
                                     <th className="p-3 text-[9px] font-black uppercase tracking-widest">Practical Fee</th>
                                     <th className="p-3 text-[9px] font-black uppercase tracking-widest">Hostel</th>
                                     <th className="p-3 text-[9px] font-black uppercase tracking-widest">Travelling Expenses</th>
+                                    <th className="p-3 text-[9px] font-black uppercase tracking-widest">Exam Fee</th>
                                  </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
@@ -420,6 +423,7 @@ export default function StudentDashboard() {
                                        <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_practical_fee || 0).toLocaleString()}</td>
                                        <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_hostel_fee || 0).toLocaleString()}</td>
                                        <td className="p-3 font-bold text-gray-700">₹{Number(fee.breakdown_travelling_fee || 0).toLocaleString()}</td>
+                                       <td className="p-3 font-bold text-gray-700">₹{Number(fee.exam_fee || 0).toLocaleString()}</td>
                                     </tr>
                                  ))}
                               </tbody>
@@ -533,13 +537,13 @@ export default function StudentDashboard() {
                                      </td>
                                   )}
                                   <td className="px-8 py-6 text-center">
-                                     {allocated === 0 ? (
-                                       <span className="px-3 py-1 bg-gray-50 text-gray-400 text-[9px] font-black uppercase rounded-lg border border-gray-100">Waiting for Admin</span>
-                                     ) : pendingPaid > 0 ? (
+                                     {pendingPaid > 0 ? (
                                        <div className="flex flex-col items-center">
                                           <span className="px-3 py-1 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded-lg border border-amber-300 shadow-sm animate-pulse">Wait for Management Approval</span>
                                           <span className="text-[9px] font-bold text-amber-600 mt-1">₹{pendingPaid.toLocaleString()} payment submitted</span>
                                        </div>
+                                     ) : allocated === 0 ? (
+                                       <span className="px-3 py-1 bg-amber-50 text-amber-700 text-[9px] font-black uppercase rounded-lg border border-amber-200">Optional / As Applicable</span>
                                      ) : balance <= 0 ? (
                                        <span className="px-3 py-1 bg-green-100 text-green-600 text-[9px] font-black uppercase rounded-lg border border-green-200">Fully Paid</span>
                                      ) : (
@@ -550,7 +554,11 @@ export default function StudentDashboard() {
                                      )}
                                   </td>
                                   <td className="px-8 py-6 text-center">
-                                     {balance > 0 && allocated > 0 ? (
+                                     {pendingPaid > 0 ? (
+                                       <span className="px-3 py-1.5 bg-amber-50 text-amber-700 text-[10px] font-black uppercase rounded-xl border border-amber-200">
+                                          In Review
+                                       </span>
+                                     ) : balance > 0 && allocated > 0 ? (
                                        <button 
                                           onClick={() => openPayModal(selectedFeeType, balance, fee.academic_year)}
                                           className="px-5 py-2 bg-blue text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-ink transition-all shadow-lg shadow-blue/20"
@@ -564,7 +572,12 @@ export default function StudentDashboard() {
                                           </span>
                                        </div>
                                      ) : (
-                                       <span className="text-[10px] font-bold text-gray-300 uppercase italic">N/A</span>
+                                       <button 
+                                          onClick={() => openPayModal(selectedFeeType, 0, fee.academic_year)}
+                                          className="px-5 py-2 bg-blue text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-ink transition-all shadow-lg shadow-blue/20"
+                                       >
+                                          Pay Now
+                                       </button>
                                      )}
                                   </td>
                                </tr>
@@ -588,39 +601,57 @@ export default function StudentDashboard() {
                   
                   <div className="p-8">
                      {(() => {
-                        const uploadedProofs = (student.payment_proofs || []).filter(p => p.fee_type === selectedFeeType);
+                        const normSelected = (selectedFeeType || '').toLowerCase().trim();
+                        const uploadedProofs = (student.payment_proofs || []).filter(p => {
+                           const pType = (p.fee_type || '').toLowerCase().trim();
+                           return pType === normSelected ||
+                             (normSelected.includes('admission') && pType.includes('admission')) ||
+                             (normSelected.includes('academic') && (pType.includes('academic') || pType.includes('college'))) ||
+                             (normSelected.includes('college') && (pType.includes('academic') || pType.includes('college'))) ||
+                             (normSelected.includes('travelling') && pType.includes('travelling')) ||
+                             (normSelected.includes('practical') && pType.includes('practical')) ||
+                             (normSelected.includes('hostel') && pType.includes('hostel')) ||
+                             (normSelected.includes('exam') && pType.includes('exam'));
+                        });
                          
-                         const officialPayments = [];
-                         if (selectedFeeType === 'Academic Fee' && student.student_fees) {
-                            student.student_fees.forEach(fee => {
-                               const officialPaid = Number(fee.paid_amount || 0);
-                               if (officialPaid > 0) {
-                                  const hasUploadedApproved = uploadedProofs.some(p => 
-                                     p.academic_year.toLowerCase().trim() === fee.academic_year.toLowerCase().trim() && 
-                                     p.status.toLowerCase() === 'approved'
-                                  );
-                                  
-                                  if (!hasUploadedApproved) {
-                                     officialPayments.push({
-                                        id: `official-${fee.id}`,
-                                        fee_type: 'Academic Fee',
-                                        amount: officialPaid,
-                                        academic_year: fee.academic_year,
-                                        screenshot: null,
-                                        status: 'Approved',
-                                        is_official: true,
-                                        created_at: fee.updated_at || student.created_at
-                                     });
-                                  }
-                               }
-                            });
-                         }
+                        const officialPayments = [];
+                        if (student.student_fees) {
+                           student.student_fees.forEach(fee => {
+                              let officialPaid = 0;
+                              if (normSelected.includes('academic') || normSelected.includes('college')) officialPaid = Number(fee.paid_amount || 0);
+                              else if (normSelected.includes('admission')) officialPaid = Number(fee.admission_fee_paid || 0);
+                              else if (normSelected.includes('hostel')) officialPaid = Number(fee.hostel_fee_paid || 0);
+                              else if (normSelected.includes('exam')) officialPaid = Number(fee.exam_fee_paid || 0);
+                              else if (normSelected.includes('practical')) officialPaid = Number(fee.practical_fee_paid || 0);
+                              else if (normSelected.includes('travelling')) officialPaid = Number(fee.travelling_fee_paid || 0);
 
-                         const feeHistory = [...uploadedProofs, ...officialPayments].sort((a, b) => 
-                            new Date(b.created_at) - new Date(a.created_at)
-                         );
-                        
-                        if (feeHistory.length === 0) {
+                              if (officialPaid > 0) {
+                                 const hasUploadedApproved = uploadedProofs.some(p => 
+                                    p.academic_year.toLowerCase().trim() === fee.academic_year.toLowerCase().trim() && 
+                                    p.status.toLowerCase() === 'approved'
+                                 );
+                                 
+                                 if (!hasUploadedApproved) {
+                                    officialPayments.push({
+                                       id: `official-${fee.id}`,
+                                       fee_type: selectedFeeType,
+                                       amount: officialPaid,
+                                       academic_year: fee.academic_year,
+                                       screenshot: null,
+                                       status: 'Approved',
+                                       is_official: true,
+                                       created_at: fee.updated_at || student.created_at
+                                    });
+                                 }
+                              }
+                           });
+                        }
+
+                        const feeHistory = [...uploadedProofs, ...officialPayments].sort((a, b) => 
+                           new Date(b.created_at) - new Date(a.created_at)
+                        );
+                       
+                       if (feeHistory.length === 0) {
                            return (
                               <div className="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-100 max-w-lg mx-auto">
                                  <div className="h-14 w-14 bg-sky rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue">
@@ -778,12 +809,13 @@ export default function StudentDashboard() {
                                  <th className="p-4 text-[10px] font-black uppercase tracking-widest">Practical Fee</th>
                                  <th className="p-4 text-[10px] font-black uppercase tracking-widest">Hostel</th>
                                  <th className="p-4 text-[10px] font-black uppercase tracking-widest">Travelling Expenses</th>
+                                 <th className="p-4 text-[10px] font-black uppercase tracking-widest">Exam Fee</th>
                               </tr>
                            </thead>
                            <tbody className="divide-y divide-gray-100">
                               {courseYears.map((year) => {
                                  const fee = student.student_fees.find(f => (f.academic_year || '').toLowerCase() === year.toLowerCase()) || {
-                                    academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0
+                                    academic_year: year, breakdown_total_fee: 0, committed_fee: 0, admission_fee: 0, breakdown_practical_fee: 0, breakdown_hostel_fee: 0, breakdown_travelling_fee: 0, exam_fee: 0
                                  };
                                  return (
                                     <tr key={year} className="hover:bg-gray-50/50">
@@ -794,6 +826,7 @@ export default function StudentDashboard() {
                                        <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_practical_fee || 0).toLocaleString()}</td>
                                        <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_hostel_fee || 0).toLocaleString()}</td>
                                        <td className="p-4 font-bold text-gray-700">₹{Number(fee.breakdown_travelling_fee || 0).toLocaleString()}</td>
+                                       <td className="p-4 font-bold text-gray-700">₹{Number(fee.exam_fee || 0).toLocaleString()}</td>
                                     </tr>
                                  );
                               })}

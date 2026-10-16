@@ -206,6 +206,13 @@ router.get("/profile", async (req, res) => {
     if (isMsc) {
       fees = fees.filter(f => !['3rd year', '4th year'].includes((f.academic_year || '').toLowerCase().trim()));
     }
+    fees = fees.map(f => ({
+      ...f,
+      total_fee: Number(f.total_fee) > 0 ? f.total_fee : (Number(f.committed_fee) > 0 ? f.committed_fee : f.breakdown_total_fee),
+      practical_fee: Number(f.practical_fee) > 0 ? f.practical_fee : f.breakdown_practical_fee,
+      hostel_fee: Number(f.hostel_fee) > 0 ? f.hostel_fee : f.breakdown_hostel_fee,
+      travelling_fee: Number(f.travelling_fee) > 0 ? f.travelling_fee : f.breakdown_travelling_fee
+    }));
 
     // Calculate attendance percentage
     const [attRows] = await pool.query(
