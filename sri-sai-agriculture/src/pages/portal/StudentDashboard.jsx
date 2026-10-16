@@ -245,16 +245,8 @@ export default function StudentDashboard() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate PNG
-    if (file.type !== "image/png") {
-      alert("Only PNG files are allowed!");
-      e.target.value = "";
-      return;
-    }
-
-    // Validate 100KB
-    if (file.size > 100 * 1024) {
-      alert("File size must be less than 100KB!");
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file (PNG, JPG, JPEG, WEBP)!");
       e.target.value = "";
       return;
     }
@@ -996,11 +988,11 @@ export default function StudentDashboard() {
 
                  {/* Upload Section */}
                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Upload Payment Screenshot (PNG only, Max 100KB)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Upload Payment Screenshot</label>
                     <div className="relative group">
                        <input 
                           type="file" 
-                          accept=".png" 
+                          accept="image/*" 
                           onChange={handleFileChange}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                        />
@@ -1008,12 +1000,12 @@ export default function StudentDashboard() {
                           {screenshot ? (
                             <div className="flex items-center justify-center gap-3 text-green-600">
                                <Check size={20} />
-                               <span className="text-sm font-bold">Screenshot Attached!</span>
+                               <span className="text-sm font-bold">Screenshot Attached ({screenshot.name})</span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-2 text-gray-400">
                                <Plus size={24} />
-                               <span className="text-xs font-bold uppercase tracking-widest">Click to Upload PNG</span>
+                               <span className="text-xs font-bold uppercase tracking-widest">Click to Upload Payment Screenshot</span>
                             </div>
                           )}
                        </div>

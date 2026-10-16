@@ -90,12 +90,8 @@ export default function StudentRegister() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.type !== "image/png") {
-      alert("Only PNG files are allowed!");
-      return;
-    }
-    if (file.size > 100 * 1024) {
-      alert("File size must be under 100KB!");
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file (PNG, JPG, JPEG, WEBP)!");
       return;
     }
     setScreenshot(file);
@@ -198,11 +194,11 @@ export default function StudentRegister() {
              </div>
 
              <div className="space-y-4">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Upload Payment Screenshot (PNG only, Max 100KB)</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Upload Payment Screenshot</label>
                 <div className="relative group">
                    <input 
                       type="file" 
-                      accept=".png" 
+                      accept="image/*" 
                       onChange={handleFileChange}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                    />
@@ -210,12 +206,12 @@ export default function StudentRegister() {
                       {screenshot ? (
                         <div className="flex items-center justify-center gap-3 text-green-600">
                            <Check size={24} strokeWidth={3} />
-                           <span className="text-sm font-black uppercase tracking-widest">Screenshot Attached!</span>
+                           <span className="text-sm font-black uppercase tracking-widest">Screenshot Attached! ({screenshot.name})</span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2 text-gray-400">
                            <Plus size={32} />
-                           <span className="text-[11px] font-black uppercase tracking-widest">Click to Upload PNG Screenshot</span>
+                           <span className="text-[11px] font-black uppercase tracking-widest">Click to Upload Payment Screenshot</span>
                         </div>
                       )}
                    </div>
